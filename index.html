@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Environmental Compliance Monitor Zambia</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --ink: #1c2630; --muted: #5a6672; --line: #dde2e7;
+    --brand: #1f5f8b; --ok: #1e7a46; --bad: #b3261e; --warn: #a15c00;
+    --okbg: #e6f3ec; --badbg: #fbe9e7; --warnbg: #fdf1dc;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { background: var(--brand); color: #fff; padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header .sub { font-size: 12px; opacity: .85; }
+  .badge { background: rgba(255,255,255,.18); padding: 4px 10px; border-radius: 12px; font-size: 12px; }
+  nav { background: var(--card); border-bottom: 1px solid var(--line); padding: 0 24px; display: flex; gap: 4px; flex-wrap: wrap; }
+  nav button { background: none; border: 0; padding: 12px 14px; font: inherit; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; }
+  nav button.active { color: var(--brand); border-bottom-color: var(--brand); font-weight: 600; }
+  main { padding: 20px 24px 40px; max-width: 1280px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+  select, textarea, input[type=text], input[type=number] { max-width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  button.btn { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--brand); background: var(--brand); color: #fff; cursor: pointer; }
+  button.btn.alt { background: #fff; color: var(--brand); }
+  button.btn.small { padding: 3px 8px; font-size: 12px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .card { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .card h2, .card h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; }
+  td.nw, th.nw { white-space: nowrap; }
+  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  tr.pick { cursor: pointer; }
+  #op-points table { font-size: 13px; }
+  #op-points th, #op-points td { padding: 6px 4px; }
+  #op-points .pill { padding: 1px 6px; font-size: 11.5px; }
+  tr.pick:hover td { background: #f1f5f9; }
+  tr.sel td { background: #e8f0f7; }
+  .pill { white-space: nowrap; display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+  .pill.ok { background: var(--okbg); color: var(--ok); }
+  .pill.bad { background: var(--badbg); color: var(--bad); }
+  .pill.warn { background: var(--warnbg); color: var(--warn); }
+  .pill.neutral { background: #eceff2; color: var(--muted); }
+  .kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+  .kpi .v { font-size: 26px; font-weight: 600; }
+  .kpi .l { font-size: 12px; color: var(--muted); }
+  canvas { width: 100%; height: 260px; display: block; }
+  .muted { color: var(--muted); }
+  .two { display: grid; gap: 16px; grid-template-columns: 2fr 1fr; }
+  @media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+  .report { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 28px 32px; }
+  .report h2 { font-size: 18px; margin: 0 0 4px; }
+  .report h3 { margin: 22px 0 8px; font-size: 14px; }
+  @media print {
+    header, nav, .no-print { display: none !important; }
+    .panel { display: none !important; }
+    #panel-report { display: block !important; }
+    body { background: #fff; }
+    main { padding: 0; max-width: none; }
+    .report { border: 0; padding: 0; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Environmental Compliance Monitor, Zambia</h1>
+    <div class="sub">Mining effluent and tailings, operator and regulator views</div>
+  </div>
+  <div>
+    <span class="badge" id="source-badge">Data source: simulated</span>
+    <span class="badge" id="clock"></span>
+  </div>
+</header>
+<nav id="tabs">
+  <button data-tab="operator" class="active">Operator view</button>
+  <button data-tab="regulator">Regulator view</button>
+  <button data-tab="limits">Limit register</button>
+  <button data-tab="report">Compliance report</button>
+  <button data-tab="test">Test checklist</button>
+</nav>
+<main>
+  <section class="panel active" id="panel-operator">
+    <div class="bar">
+      <label for="op-select">Operator</label>
+      <select id="op-select"></select>
+      <button class="btn alt" id="pause-btn">Pause feed</button>
+      <button class="btn alt" id="breach-btn">Simulate a breach</button>
+    </div>
+    <div class="kpis" id="op-kpis"></div>
+    <div class="grid" id="op-points"></div>
+    <div class="card" style="margin-top:16px">
+      <h2 id="chart-title">Select a parameter above</h2>
+      <canvas id="chart"></canvas>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>Exceedance events and corrective actions</h2>
+      <div id="op-events"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-regulator">
+    <div class="kpis" id="reg-kpis"></div>
+    <div class="two">
+      <div class="card">
+        <h2>Operators</h2>
+        <div id="reg-table"></div>
+      </div>
+      <div class="card">
+        <h2>Site map, Copperbelt and North-Western Province</h2>
+        <div id="reg-map"></div>
+      </div>
+    </div>
+    <div class="two" style="margin-top:16px">
+      <div class="card">
+        <h2>Exceedance feed, all operators</h2>
+        <div id="reg-events"></div>
+      </div>
+      <div class="card">
+        <h2>Inspection requests</h2>
+        <div id="reg-insp"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-limits">
+    <div class="card">
+      <h2>Limit register</h2>
+      <p class="muted">The values below are demonstration defaults. Replace them with the limits in each operator licence conditions and the current ZEMA standards before any real use. Changes apply immediately to the live exceedance checks.</p>
+      <div id="limits-table"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-report">
+    <div class="bar no-print">
+      <label for="rep-select">Operator</label>
+      <select id="rep-select"></select>
+      <button class="btn" id="print-btn">Print or save as PDF</button>
+      <button class="btn alt" id="csv-btn">Download CSV</button>
+    </div>
+    <div class="report" id="report-body"></div>
+  </section>
+  <section class="panel" id="panel-test">
+    <div class="card">
+      <h2>Test checklist for two testers</h2>
+      <p class="muted">Allow about 20 minutes. One person plays the operator (Demo Mine C) and one plays the regulator. Each person opens this page on their own device. Readings are simulated and each device runs its own session, so sit together and compare screens.</p>
+      <h3>Operator tester</h3>
+      <ol>
+        <li>Open Operator view and choose Demo Mine C, Mufulira.</li>
+        <li>Click a few parameter rows and check that the chart and its dashed limit line change.</li>
+        <li>Press Simulate a breach and wait until a status label shows Exceeds limit.</li>
+        <li>In the events table press Acknowledge on the new event.</li>
+        <li>Press Log action, type a corrective action and press Save.</li>
+        <li>Wait up to one minute. Once the reading is back within its limit for 3 readings in a row, the event should change to Closed.</li>
+        <li>Press Pause feed, then Resume feed.</li>
+      </ol>
+      <h3>Regulator tester</h3>
+      <ol>
+        <li>Open Regulator view and note which operators show red, amber or green on the map.</li>
+        <li>Find the most recent event in the exceedance feed and read its peak and limit.</li>
+        <li>Press Request inspection for one operator, then open Operator view for that operator and check the inspection note.</li>
+        <li>Open Limit register, change the copper maximum to 0.5 and watch new exceedances appear.</li>
+        <li>Open Compliance report, choose an operator, press Print or save as PDF and Download CSV.</li>
+      </ol>
+      <h3>Feedback</h3>
+      <form id="fb">
+        <label>Your name and role<br><input type="text" id="fb0" size="40"></label>
+        <p><label>1. Was it clear which sites need attention, and why?<br><textarea id="fb1" rows="3" cols="80"></textarea></label></p>
+        <p><label>2. Did the acknowledge and corrective action steps match how your organisation works?<br><textarea id="fb2" rows="3" cols="80"></textarea></label></p>
+        <p><label>3. What is missing for a real inspection or monthly report?<br><textarea id="fb3" rows="3" cols="80"></textarea></label></p>
+        <p><label>4. What was confusing or hard to read?<br><textarea id="fb4" rows="3" cols="80"></textarea></label></p>
+        <p><label>5. Anything else?<br><textarea id="fb5" rows="3" cols="80"></textarea></label></p>
+        <button class="btn" type="submit">Save my answers</button>
+        <span class="muted" id="fb-msg">Saves a text file to your Downloads folder. Email it to the project lead.</span>
+      </form>
+    </div>
+  </section>
+</main>
+<script>
+/*
+ Compliance engine for the Zambia environmental compliance monitoring prototype.
+ Common reading format used by every data source adapter:
+   { op: 'a', point: 'out', param: 'cu', value: 0.42, t: 1732440000000, source: 'simulated' }
+ Replace the simulator with a Kobo form pull, an MQTT subscriber or an open data fetch by
+ calling engine.ingest(reading) for each reading, then engine.commit() once per batch.
+*/
+(function (root) {
+  'use strict';
+
+  var PARAMS = {
+    ph:   { label: 'pH',                    unit: '',     min: 6.0, max: 9.0,  dec: 2, base: 7.5,  sd: 0.12, span: 0.9 },
+    tss:  { label: 'Suspended solids',      unit: 'mg/L', min: null, max: 100,  dec: 0, base: 55,   sd: 6,    span: 40 },
+    cu:   { label: 'Copper',                unit: 'mg/L', min: null, max: 1.0,  dec: 2, base: 0.35, sd: 0.06, span: 0.5 },
+    so4:  { label: 'Sulphate',              unit: 'mg/L', min: null, max: 1000, dec: 0, base: 650,  sd: 50,   span: 400 },
+    turb: { label: 'Turbidity',             unit: 'NTU',  min: null, max: 50,   dec: 0, base: 22,   sd: 3,    span: 25 },
+    free: { label: 'Dam freeboard',         unit: 'm',    min: 1.0, max: null,  dec: 2, base: 2.0,  sd: 0.05, span: 0.6 }
+  };
+
+  var OPERATORS = [
+    { id: 'a', name: 'Demo Mine A', town: 'Chingola', x: 0.46, y: 0.52, stress: 0.15 },
+    { id: 'b', name: 'Demo Mine B', town: 'Kitwe',    x: 0.66, y: 0.74, stress: 0.30 },
+    { id: 'c', name: 'Demo Mine C', town: 'Mufulira', x: 0.82, y: 0.38, stress: 0.60 },
+    { id: 'd', name: 'Demo Mine D', town: 'Solwezi',  x: 0.14, y: 0.24, stress: 0.05 }
+  ];
+
+  var POINTS = [
+    { id: 'dam', name: 'Tailings dam decant',   params: ['ph', 'tss', 'cu', 'so4', 'free'] },
+    { id: 'out', name: 'Final effluent outlet', params: ['ph', 'tss', 'cu', 'so4'] },
+    { id: 'str', name: 'Downstream stream',     params: ['ph', 'cu', 'turb'] }
+  ];
+
+  var HISTORY = 90;
+  var SCORE_WINDOW = 300;
+
+  function key(op, point, param) { return op + '|' + point + '|' + param; }
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function within(param, v) {
+    var p = PARAMS[param];
+    if (p.min !== null && v < p.min) { return false; }
+    if (p.max !== null && v > p.max) { return false; }
+    return true;
+  }
+
+  function deviation(param, v) {
+    var p = PARAMS[param];
+    if (p.max !== null && v > p.max) { return v - p.max; }
+    if (p.min !== null && v < p.min) { return p.min - v; }
+    return 0;
+  }
+
+  function limitText(param) {
+    var p = PARAMS[param];
+    var u = p.unit ? ' ' + p.unit : '';
+    if (p.min !== null && p.max !== null) { return p.min.toFixed(p.dec) + ' to ' + p.max.toFixed(p.dec) + u; }
+    if (p.max !== null) { return 'max ' + p.max.toFixed(p.dec) + u; }
+    return 'min ' + p.min.toFixed(p.dec) + u;
+  }
+
+  function Engine(seed) {
+    this.rand = mulberry32(seed || 1);
+    this.series = {};
+    this.events = [];
+    this.openByKey = {};
+    this.inspections = [];
+    this.windows = {};
+    this.listeners = [];
+    this.nextId = 1;
+    this.startedAt = Date.now();
+    var self = this;
+    OPERATORS.forEach(function (op) {
+      self.windows[op.id] = [];
+      POINTS.forEach(function (pt) {
+        pt.params.forEach(function (pm) {
+          var p = PARAMS[pm];
+          var edge = p.max !== null ? p.max : p.min;
+          var base = p.base + op.stress * 0.6 * (edge - p.base);
+          self.series[key(op.id, pt.id, pm)] = {
+            key: key(op.id, pt.id, pm), op: op.id, point: pt.id, param: pm,
+            base: base, sd: p.sd * (1 + op.stress), spike: null,
+            values: [base], times: [Date.now()], inLimit: true,
+            n: 0, sum: 0, min: Infinity, max: -Infinity, exceed: 0
+          };
+        });
+      });
+    });
+  }
+
+  Engine.prototype.gauss = function () {
+    var u = 1 - this.rand(), v = this.rand();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  };
+
+  Engine.prototype.on = function (fn) { this.listeners.push(fn); };
+  Engine.prototype.commit = function () { this.listeners.forEach(function (fn) { fn(); }); };
+
+  Engine.prototype.startSpike = function (s, dir) {
+    var p = PARAMS[s.param];
+    var hi = dir ? dir === 'hi' : (p.max !== null && (p.min === null || this.rand() < 0.5));
+    s.spike = { left: 6 + Math.floor(this.rand() * 6), target: hi ? p.max + p.span : p.min - p.span };
+  };
+
+  Engine.prototype.nextValue = function (s, op) {
+    var p = PARAMS[s.param];
+    var v = s.values[s.values.length - 1];
+    if (!s.spike && this.rand() < 0.004 * (0.4 + op.stress * 2)) { this.startSpike(s); }
+    if (s.spike) {
+      v += (s.spike.target - v) * 0.45 + this.gauss() * s.sd * 0.5;
+      s.spike.left -= 1;
+      if (s.spike.left <= 0) { s.spike = null; }
+    } else {
+      v += (s.base - v) * 0.3 + this.gauss() * s.sd;
+    }
+    if (s.param === 'ph') { v = Math.min(14, Math.max(0, v)); }
+    else if (s.param === 'free') { v = Math.max(0.2, v); }
+    else { v = Math.max(0, v); }
+    return Math.round(v * 1000) / 1000;
+  };
+
+  Engine.prototype.tick = function (t) {
+    var self = this;
+    OPERATORS.forEach(function (op) {
+      POINTS.forEach(function (pt) {
+        pt.params.forEach(function (pm) {
+          var s = self.series[key(op.id, pt.id, pm)];
+          self.ingest({ op: op.id, point: pt.id, param: pm, value: self.nextValue(s, op), t: t, source: 'simulated' });
+        });
+      });
+    });
+    this.commit();
+  };
+
+  Engine.prototype.forceBreach = function (opId) {
+    var list = [];
+    for (var k in this.series) {
+      if (this.series[k].op === opId && this.series[k].point !== 'str') { list.push(this.series[k]); }
+    }
+    var s = list[Math.floor(this.rand() * list.length)];
+    this.startSpike(s);
+    return s;
+  };
+
+  Engine.prototype.ingest = function (r) {
+    var s = this.series[key(r.op, r.point, r.param)];
+    if (!s) { return; }
+    s.values.push(r.value); s.times.push(r.t);
+    if (s.values.length > HISTORY) { s.values.shift(); s.times.shift(); }
+    var ok = within(r.param, r.value);
+    s.inLimit = ok;
+    s.n += 1; s.sum += r.value;
+    if (r.value < s.min) { s.min = r.value; }
+    if (r.value > s.max) { s.max = r.value; }
+    if (!ok) { s.exceed += 1; }
+    var w = this.windows[r.op];
+    w.push(ok); if (w.length > SCORE_WINDOW) { w.shift(); }
+    this.trackEvent(s, r, ok);
+  };
+
+  Engine.prototype.trackEvent = function (s, r, ok) {
+    var ev = this.openByKey[s.key];
+    if (!ok) {
+      if (!ev) {
+        ev = {
+          id: this.nextId++, key: s.key, op: s.op, point: s.point, param: s.param,
+          t: r.t, value: r.value, status: 'Open', active: true, inCount: 0, readings: 1,
+          ackAt: null, action: null, actionAt: null, closedAt: null
+        };
+        this.events.unshift(ev);
+        this.openByKey[s.key] = ev;
+      } else {
+        ev.active = true; ev.inCount = 0; ev.readings += 1;
+        if (deviation(s.param, r.value) > deviation(s.param, ev.value)) { ev.value = r.value; }
+      }
+    } else if (ev) {
+      ev.active = false; ev.inCount += 1;
+      this.tryClose(ev, r.t);
+    }
+  };
+
+  Engine.prototype.tryClose = function (ev, t) {
+    if (ev.status === 'Action logged' && !ev.active && ev.inCount >= 3) {
+      ev.status = 'Closed'; ev.closedAt = t;
+      delete this.openByKey[ev.key];
+    }
+  };
+
+  Engine.prototype.findEvent = function (id) {
+    for (var i = 0; i < this.events.length; i++) { if (this.events[i].id === id) { return this.events[i]; } }
+    return null;
+  };
+
+  Engine.prototype.acknowledge = function (id) {
+    var ev = this.findEvent(id);
+    if (ev && ev.status === 'Open') { ev.status = 'Acknowledged'; ev.ackAt = Date.now(); }
+    this.commit();
+  };
+
+  Engine.prototype.logAction = function (id, text) {
+    var ev = this.findEvent(id);
+    if (ev && (ev.status === 'Open' || ev.status === 'Acknowledged') && text) {
+      if (!ev.ackAt) { ev.ackAt = Date.now(); }
+      ev.status = 'Action logged'; ev.action = text; ev.actionAt = Date.now();
+      this.tryClose(ev, Date.now());
+    }
+    this.commit();
+  };
+
+  Engine.prototype.requestInspection = function (opId, reason) {
+    this.inspections.unshift({ id: this.nextId++, op: opId, reason: reason, t: Date.now() });
+    this.commit();
+  };
+
+  Engine.prototype.score = function (opId) {
+    var w = this.windows[opId];
+    if (!w.length) { return 100; }
+    var ok = 0;
+    for (var i = 0; i < w.length; i++) { if (w[i]) { ok += 1; } }
+    return 100 * ok / w.length;
+  };
+
+  Engine.prototype.eventsFor = function (opId) {
+    return this.events.filter(function (e) { return e.op === opId; });
+  };
+
+  Engine.prototype.counts = function (opId) {
+    var list = opId ? this.eventsFor(opId) : this.events;
+    var c = { open: 0, ack: 0, action: 0, closed: 0, unresolved: 0 };
+    list.forEach(function (e) {
+      if (e.status === 'Open') { c.open += 1; }
+      else if (e.status === 'Acknowledged') { c.ack += 1; }
+      else if (e.status === 'Action logged') { c.action += 1; }
+      else { c.closed += 1; }
+    });
+    c.unresolved = c.open + c.ack + c.action;
+    return c;
+  };
+
+  Engine.prototype.report = function (opId) {
+    var rows = [], self = this;
+    POINTS.forEach(function (pt) {
+      pt.params.forEach(function (pm) {
+        var s = self.series[key(opId, pt.id, pm)];
+        rows.push({
+          point: pt.name, param: PARAMS[pm].label, unit: PARAMS[pm].unit, limit: limitText(pm),
+          n: s.n, min: s.n ? s.min : null, mean: s.n ? s.sum / s.n : null, max: s.n ? s.max : null,
+          exceed: s.exceed, dec: PARAMS[pm].dec
+        });
+      });
+    });
+    return rows;
+  };
+
+  var api = {
+    Engine: Engine, PARAMS: PARAMS, OPERATORS: OPERATORS, POINTS: POINTS, HISTORY: HISTORY,
+    key: key, within: within, limitText: limitText
+  };
+  if (typeof module !== 'undefined' && module.exports) { module.exports = api; } else { root.ECMEngine = api; }
+})(this);
+
+</script>
+<script>
+(function () {
+  'use strict';
+  var E = window.ECMEngine;
+  var engine = new E.Engine(Date.now() % 100000);
+  var ui = { tab: 'operator', op: 'a', rep: 'a', sel: 'a|out|cu', actionFor: null, paused: false };
+  var FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function opName(id) { return E.OPERATORS.filter(function (o) { return o.id === id; })[0].name; }
+  function ptName(id) { return E.POINTS.filter(function (o) { return o.id === id; })[0].name; }
+  function fmt(param, v) { var p = E.PARAMS[param]; return v.toFixed(p.dec) + (p.unit ? ' ' + p.unit : ''); }
+  function clock(t) { return new Date(t).toLocaleTimeString('en-GB'); }
+  function pill(text, cls) { return '<span class="pill ' + cls + '">' + esc(text) + '</span>'; }
+  function statusPill(s) {
+    return pill(s, s === 'Open' ? 'bad' : s === 'Closed' ? 'ok' : s === 'Acknowledged' ? 'warn' : 'neutral');
+  }
+  function busy(el) { return el.contains(document.activeElement) && document.activeElement.tagName === 'INPUT'; }
+
+  /* ---------- operator view ---------- */
+  function renderOperator() {
+    var c = engine.counts(ui.op);
+    var score = engine.score(ui.op);
+    $('op-kpis').innerHTML =
+      kpi(score.toFixed(1) + '%', 'Readings within limits, recent window') +
+      kpi(c.open, 'Open exceedances awaiting acknowledgement') +
+      kpi(c.ack + c.action, 'Acknowledged or action logged') +
+      kpi(c.closed, 'Closed this session');
+
+    var html = '';
+    E.POINTS.forEach(function (pt) {
+      html += '<div class="card"><h3>' + esc(pt.name) + '</h3><table><tr><th>Parameter</th><th>Reading</th><th>Limit</th><th>Status</th></tr>';
+      pt.params.forEach(function (pm) {
+        var s = engine.series[E.key(ui.op, pt.id, pm)];
+        var v = s.values[s.values.length - 1];
+        var k = s.key;
+        html += '<tr class="pick' + (ui.sel === k ? ' sel' : '') + '" data-series="' + k + '"><td>' + esc(E.PARAMS[pm].label) + '</td><td class="nw">' +
+          fmt(pm, v) + '</td><td class="nw">' + esc(E.limitText(pm)) + '</td><td>' +
+          (s.inLimit ? pill('Within limit', 'ok') : pill('Exceeds limit', 'bad')) + '</td></tr>';
+      });
+      html += '</table></div>';
+    });
+    $('op-points').innerHTML = html;
+
+    var s = ui.sel && engine.series[ui.sel];
+    if (s) {
+      $('chart-title').textContent = opName(s.op) + ', ' + ptName(s.point) + ', ' + E.PARAMS[s.param].label + (E.PARAMS[s.param].unit ? ' (' + E.PARAMS[s.param].unit + ')' : '');
+      drawChart($('chart'), s);
+    }
+
+    var box = $('op-events');
+    if (!busy(box)) { box.innerHTML = eventsTable(engine.eventsFor(ui.op), true); focusAction(); }
+
+    var notes = engine.inspections.filter(function (i) { return i.op === ui.op; });
+    if (notes.length) {
+      $('op-kpis').insertAdjacentHTML('afterend', '<div class="card" id="insp-note" style="margin-bottom:16px"><h3>Inspection requested by the regulator</h3>' +
+        notes.slice(0, 3).map(function (n) { return '<div>' + clock(n.t) + ', ' + esc(n.reason) + '</div>'; }).join('') + '</div>');
+      var all = document.querySelectorAll('#insp-note');
+      for (var i = 0; i < all.length - 1; i++) { all[i].remove(); }
+    } else if ($('insp-note')) { $('insp-note').remove(); }
+  }
+
+  function kpi(v, l) { return '<div class="kpi"><div class="v">' + v + '</div><div class="l">' + esc(l) + '</div></div>'; }
+
+  function eventsTable(list, withActions) {
+    if (!list.length) { return '<p class="muted">No exceedances recorded yet. Use Simulate a breach to test the workflow.</p>'; }
+    var h = '<table><tr><th>Time</th>' + (withActions ? '' : '<th>Operator</th>') + '<th>Point and parameter</th><th>Peak</th><th>Limit</th><th>Status</th>' + (withActions ? '<th>Corrective action</th>' : '') + '</tr>';
+    list.slice(0, 30).forEach(function (e) {
+      h += '<tr><td>' + clock(e.t) + '</td>' + (withActions ? '' : '<td>' + esc(opName(e.op)) + '</td>') +
+        '<td>' + esc(ptName(e.point)) + ', ' + esc(E.PARAMS[e.param].label) + '</td><td>' + fmt(e.param, e.value) + '</td><td>' + esc(E.limitText(e.param)) + '</td><td>' + statusPill(e.status) + '</td>';
+      if (withActions) {
+        h += '<td>';
+        if (e.status === 'Open') { h += '<button class="btn small alt" data-ack="' + e.id + '">Acknowledge</button> '; }
+        if (e.status === 'Open' || e.status === 'Acknowledged') {
+          if (ui.actionFor === e.id) {
+            h += '<input type="text" id="action-input" placeholder="Describe the action taken" size="28"> <button class="btn small" data-save="' + e.id + '">Save</button>';
+          } else { h += '<button class="btn small" data-act="' + e.id + '">Log action</button>'; }
+        }
+        if (e.action) { h += '<div>' + esc(e.action) + '</div>'; }
+        h += '</td>';
+      }
+      h += '</tr>';
+    });
+    return h + '</table>';
+  }
+
+  function focusAction() { var i = $('action-input'); if (i && document.activeElement !== i) { i.focus(); } }
+
+  function drawChart(canvas, s) {
+    var dpr = window.devicePixelRatio || 1;
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) { return; }
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    var c = canvas.getContext('2d');
+    c.scale(dpr, dpr); c.clearRect(0, 0, w, h);
+    var p = E.PARAMS[s.param], vals = s.values;
+    if (vals.length < 2) { return; }
+    var padL = 56, padR = 14, padT = 12, padB = 26;
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    if (p.min !== null) { lo = Math.min(lo, p.min); }
+    if (p.max !== null) { hi = Math.max(hi, p.max); }
+    var span = (hi - lo) || 1; lo -= span * 0.12; hi += span * 0.12;
+    var X = function (i) { return padL + (w - padL - padR) * i / (vals.length - 1); };
+    var Y = function (v) { return padT + (h - padT - padB) * (1 - (v - lo) / (hi - lo)); };
+    c.font = '12px ' + FONT; c.textBaseline = 'middle';
+    c.strokeStyle = '#e3e6ea'; c.fillStyle = '#4a5560'; c.lineWidth = 1; c.textAlign = 'right';
+    for (var g = 0; g <= 4; g++) {
+      var gv = lo + (hi - lo) * g / 4, gy = Y(gv);
+      c.beginPath(); c.moveTo(padL, gy); c.lineTo(w - padR, gy); c.stroke();
+      c.fillText(gv.toFixed(p.dec), padL - 8, gy);
+    }
+    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+    c.fillText(clock(s.times[0]), padL, h - 6);
+    c.textAlign = 'right'; c.fillText(clock(s.times[s.times.length - 1]), w - padR, h - 6);
+    c.strokeStyle = '#b3261e'; c.setLineDash([6, 4]); c.lineWidth = 1.5;
+    [p.min, p.max].forEach(function (lim) {
+      if (lim === null) { return; }
+      c.beginPath(); c.moveTo(padL, Y(lim)); c.lineTo(w - padR, Y(lim)); c.stroke();
+    });
+    c.setLineDash([]); c.strokeStyle = '#1f5f8b'; c.lineWidth = 2; c.beginPath();
+    vals.forEach(function (v, i) { if (i === 0) { c.moveTo(X(i), Y(v)); } else { c.lineTo(X(i), Y(v)); } });
+    c.stroke();
+    c.fillStyle = '#b3261e'; c.textAlign = 'left'; c.textBaseline = 'bottom';
+    if (p.max !== null) { c.fillText('Limit ' + p.max.toFixed(p.dec), padL + 6, Y(p.max) - 3); }
+    if (p.min !== null) { c.textBaseline = 'top'; c.fillText('Limit ' + p.min.toFixed(p.dec), padL + 6, Y(p.min) + 3); }
+  }
+
+  /* ---------- regulator view ---------- */
+  function renderRegulator() {
+    var all = engine.counts();
+    var avg = 0;
+    E.OPERATORS.forEach(function (o) { avg += engine.score(o.id); });
+    avg /= E.OPERATORS.length;
+    $('reg-kpis').innerHTML = kpi(E.OPERATORS.length, 'Operators monitored') + kpi(avg.toFixed(1) + '%', 'Average readings within limits') +
+      kpi(all.open, 'Open exceedances not yet acknowledged') + kpi(all.unresolved, 'Unresolved exceedances in total');
+
+    var t = '<table><tr><th>Operator</th><th>Town</th><th>Within limits</th><th>Open</th><th>Unresolved</th><th>Status</th><th></th></tr>';
+    E.OPERATORS.forEach(function (o) {
+      var c = engine.counts(o.id), sc = engine.score(o.id);
+      t += '<tr><td>' + esc(o.name) + '</td><td>' + esc(o.town) + '</td><td>' + sc.toFixed(1) + '%</td><td>' + c.open + '</td><td>' + c.unresolved + '</td><td>' + opStatus(c) + '</td>' +
+        '<td><button class="btn small alt" data-insp="' + o.id + '">Request inspection</button></td></tr>';
+    });
+    $('reg-table').innerHTML = t + '</table>';
+
+    var svg = '<svg viewBox="0 0 400 270" width="100%" role="img" aria-label="Schematic site map"><rect x="1" y="1" width="398" height="268" rx="8" fill="#f1f5f9" stroke="#dde2e7"/>';
+    E.OPERATORS.forEach(function (o) {
+      var c = engine.counts(o.id), col = c.open ? '#b3261e' : c.unresolved ? '#a15c00' : '#1e7a46';
+      var x = 30 + o.x * 340, y = 30 + o.y * 200;
+      svg += '<circle cx="' + x + '" cy="' + y + '" r="9" fill="' + col + '"/><text x="' + x + '" y="' + (y + 24) + '" text-anchor="middle" font-family="' + FONT + '" font-size="12" fill="#1c2630">' + esc(o.town) + '</text>';
+    });
+    svg += '<text x="12" y="260" font-family="' + FONT + '" font-size="11" fill="#5a6672">Schematic, not to scale. Green clear, amber unresolved, red open.</text></svg>';
+    $('reg-map').innerHTML = svg;
+
+    $('reg-events').innerHTML = eventsTable(engine.events, false);
+    $('reg-insp').innerHTML = engine.inspections.length ?
+      '<table><tr><th>Time</th><th>Operator</th><th>Reason</th></tr>' + engine.inspections.slice(0, 10).map(function (i) {
+        return '<tr><td>' + clock(i.t) + '</td><td>' + esc(opName(i.op)) + '</td><td>' + esc(i.reason) + '</td></tr>';
+      }).join('') + '</table>' : '<p class="muted">No inspection requests yet.</p>';
+  }
+
+  function opStatus(c) {
+    if (c.open) { return pill('Open exceedance', 'bad'); }
+    if (c.unresolved) { return pill('Action in progress', 'warn'); }
+    return pill('Compliant', 'ok');
+  }
+
+  /* ---------- limit register ---------- */
+  function renderLimits() {
+    var t = '<table><tr><th>Parameter</th><th>Unit</th><th>Minimum</th><th>Maximum</th></tr>';
+    Object.keys(E.PARAMS).forEach(function (k) {
+      var p = E.PARAMS[k];
+      t += '<tr><td>' + esc(p.label) + '</td><td>' + esc(p.unit || 'none') + '</td><td>' + limitInput(k, 'min', p.min) + '</td><td>' + limitInput(k, 'max', p.max) + '</td></tr>';
+    });
+    $('limits-table').innerHTML = t + '</table>';
+  }
+  function limitInput(k, side, v) {
+    return v === null ? '<span class="muted">not applicable</span>' :
+      '<input type="number" step="any" data-limit="' + k + ':' + side + '" value="' + v + '" aria-label="' + k + ' ' + side + '">';
+  }
+
+  /* ---------- report ---------- */
+  function renderReport() {
+    var o = E.OPERATORS.filter(function (x) { return x.id === ui.rep; })[0];
+    var rows = engine.report(ui.rep), c = engine.counts(ui.rep);
+    var h = '<h2>Environmental compliance report</h2><div class="muted">' + esc(o.name) + ', ' + esc(o.town) + '</div>' +
+      '<div class="muted">Reporting period: simulated session from ' + new Date(engine.startedAt).toLocaleString('en-GB') + ' to ' + new Date().toLocaleString('en-GB') + '</div>' +
+      '<div class="muted">Data source: simulated readings, for demonstration only</div>' +
+      '<h3>Summary</h3><p>Readings within limits in the recent window: ' + engine.score(ui.rep).toFixed(1) + '%. Exceedances recorded: ' + (c.unresolved + c.closed) +
+      ', of which ' + c.closed + ' closed and ' + c.unresolved + ' unresolved.</p><h3>Monitoring results</h3>' +
+      '<table><tr><th>Monitoring point</th><th>Parameter</th><th>Limit</th><th>Readings</th><th>Minimum</th><th>Mean</th><th>Maximum</th><th>Exceedances</th></tr>';
+    rows.forEach(function (r) {
+      h += '<tr><td>' + esc(r.point) + '</td><td>' + esc(r.param) + '</td><td>' + esc(r.limit) + '</td><td>' + r.n + '</td><td>' + num(r.min, r.dec) + '</td><td>' + num(r.mean, r.dec) + '</td><td>' + num(r.max, r.dec) + '</td><td>' + r.exceed + '</td></tr>';
+    });
+    h += '</table><h3>Exceedance events and corrective actions</h3>' + eventsTable(engine.eventsFor(ui.rep), true).replace(/<button[^>]*>[^<]*<\/button>/g, '').replace(/<input[^>]*>/g, '');
+    $('report-body').innerHTML = h;
+  }
+  function num(v, d) { return v === null ? 'none' : v.toFixed(d); }
+
+  function csv() {
+    var rows = engine.report(ui.rep);
+    var out = ['Monitoring point,Parameter,Unit,Limit,Readings,Minimum,Mean,Maximum,Exceedances'];
+    rows.forEach(function (r) {
+      out.push([r.point, r.param, r.unit, r.limit, r.n, num(r.min, r.dec), num(r.mean, r.dec), num(r.max, r.dec), r.exceed].map(function (x) { return '"' + String(x).replace(/"/g, '""') + '"'; }).join(','));
+    });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([out.join('\n')], { type: 'text/csv' }));
+    a.download = 'compliance-report-' + ui.rep + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  /* ---------- wiring ---------- */
+  function render() {
+    $('clock').textContent = new Date().toLocaleTimeString('en-GB');
+    if (ui.tab === 'operator') { renderOperator(); }
+    else if (ui.tab === 'regulator') { renderRegulator(); }
+    else if (ui.tab === 'report') { renderReport(); }
+  }
+
+  function fillSelect(el, val) {
+    el.innerHTML = E.OPERATORS.map(function (o) { return '<option value="' + o.id + '">' + esc(o.name) + ', ' + esc(o.town) + '</option>'; }).join('');
+    el.value = val;
+  }
+  fillSelect($('op-select'), ui.op); fillSelect($('rep-select'), ui.rep);
+  $('op-select').onchange = function () { ui.op = this.value; ui.sel = this.value + '|out|cu'; render(); };
+  $('rep-select').onchange = function () { ui.rep = this.value; render(); };
+
+  $('tabs').onclick = function (e) {
+    var t = e.target.getAttribute('data-tab'); if (!t) { return; }
+    ui.tab = t;
+    Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.classList.toggle('active', b === e.target); });
+    Array.prototype.forEach.call(document.querySelectorAll('.panel'), function (p) { p.classList.toggle('active', p.id === 'panel-' + t); });
+    if (t === 'limits') { renderLimits(); }
+    render();
+  };
+
+  document.body.addEventListener('click', function (e) {
+    var t = e.target, v;
+    var row = t.closest && t.closest('tr[data-series]');
+    if (row) { ui.sel = row.getAttribute('data-series'); renderOperator(); return; }
+    if ((v = t.getAttribute('data-ack'))) { engine.acknowledge(+v); }
+    else if ((v = t.getAttribute('data-act'))) { ui.actionFor = +v; renderOperator(); }
+    else if ((v = t.getAttribute('data-save'))) {
+      var txt = $('action-input').value.trim();
+      if (txt) { engine.logAction(+v, txt); ui.actionFor = null; }
+    } else if ((v = t.getAttribute('data-insp'))) { engine.requestInspection(v, 'Inspection requested after review of exceedance feed'); }
+  });
+
+  document.body.addEventListener('change', function (e) {
+    var spec = e.target.getAttribute && e.target.getAttribute('data-limit');
+    if (!spec) { return; }
+    var parts = spec.split(':'), val = parseFloat(e.target.value);
+    if (!isNaN(val)) { E.PARAMS[parts[0]][parts[1]] = val; }
+  });
+
+  $('pause-btn').onclick = function () { ui.paused = !ui.paused; this.textContent = ui.paused ? 'Resume feed' : 'Pause feed'; };
+  $('breach-btn').onclick = function () { engine.forceBreach(ui.op); };
+  $('print-btn').onclick = function () { window.print(); };
+  $('csv-btn').onclick = csv;
+  window.addEventListener('resize', function () { if (ui.tab === 'operator') { renderOperator(); } });
+
+  engine.on(render);
+  for (var i = 0; i < 60; i++) { engine.tick(Date.now() - (60 - i) * 3000); }
+  engine.events = []; engine.openByKey = {};
+  Object.keys(engine.series).forEach(function (k) { var s = engine.series[k]; s.exceed = 0; s.n = 0; s.sum = 0; s.min = Infinity; s.max = -Infinity; });
+  Object.keys(engine.windows).forEach(function (k) { engine.windows[k] = []; });
+  engine.startedAt = Date.now();
+  setInterval(function () { if (!ui.paused) { engine.tick(Date.now()); } }, 3000);
+})();
+
+document.getElementById('fb').addEventListener('submit', function (ev) {
+  ev.preventDefault();
+  var q = ['Name and role', 'Sites needing attention clear', 'Acknowledge and action steps', 'Missing for real use', 'Confusing', 'Other'];
+  var t = 'Compliance monitor prototype v0.1 feedback\n' + new Date().toLocaleString('en-GB') + '\n\n' + q.map(function (x, i) { return x + ':\n' + document.getElementById('fb' + i).value + '\n'; }).join('\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([t], { type: 'text/plain' }));
+  a.download = 'ecm-feedback.txt';
+  document.body.appendChild(a); a.click(); a.remove();
+  document.getElementById('fb-msg').textContent = 'Saved as ecm-feedback.txt in your Downloads folder. Email it to the project lead.';
+});
+</script>
+</body>
+</html>
