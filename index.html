@@ -20,7 +20,8 @@ header .sub { font-size: 12px; opacity: .85; }
 .hdr-right select { padding: 4px 6px; }
 .badge { background: rgba(255,255,255,.16); padding: 4px 10px; border-radius: 12px; font-size: 12px; }
 .badge.link { cursor: pointer; border: 0; color: #fff; font: inherit; font-size: 12px; }
-nav { background: var(--card); border-bottom: 1px solid var(--line); padding: 0 24px; display: flex; gap: 2px; flex-wrap: wrap; }
+nav { background: var(--card); border-bottom: 1px solid var(--line); padding: 0 24px; display: flex; gap: 2px; flex-wrap: wrap; align-items: center; }
+#quick { border-color: var(--gold); font-weight: 600; color: var(--brand); }
 nav button { background: none; border: 0; padding: 11px 12px; font: inherit; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; position: relative; }
 nav button.active { color: var(--brand); border-bottom-color: var(--gold); font-weight: 600; }
 nav .cnt { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: var(--bad); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
@@ -99,18 +100,16 @@ footer.credit .txt { max-width: 560px; text-align: left; }
 <header>
   <div>
     <h1>Environmental Compliance Monitor, Zambia</h1>
-    <div class="sub">Mining effluent and tailings. Prototype v0.2, demonstration data only</div>
+    <div class="sub">Mining effluent and tailings. Prototype v0.2.1, demonstration data only</div>
   </div>
   <div class="hdr-right">
-    <label for="role">Viewing as</label>
-    <select id="role" aria-label="Role">
-      <option value="operator">Operator</option>
-      <option value="inspector">ZEMA inspector</option>
-      <option value="community">Community member</option>
-    </select>
-    <span id="op-wrap"><select id="op-select" aria-label="Operator"></select></span>
-    <button class="badge link" id="profile-btn" title="Your details"><span id="who"></span></button>
-    <button class="badge link" id="data-btn">Data and export</button>
+    <span id="signed-in" style="display:none">
+      <span id="focus-wrap"><select id="focus" aria-label="Focus on mine"></select></span>
+      <span class="badge" id="who"></span>
+      <button class="badge link" id="data-btn">Data and export</button>
+      <button class="badge link" id="signout-btn">Sign out</button>
+    </span>
+    <span id="signed-out"><button class="badge link" data-auth="concern">Report a pollution concern</button></span>
     <span class="badge" id="clock"></span>
   </div>
 </header>
@@ -132,8 +131,12 @@ footer.credit .txt { max-width: 560px; text-align: left; }
 'use strict';
 var DAY = 86400000;
 var CONFIG = {
-  version: '0.2',
-  storageKey: 'ecm-zambia-v02',
+  version: '0.2.1',
+  storageKey: 'ecm-zambia-v021',
+  sessionMinutes: 30,
+  lockMinutes: 15,
+  maxFailed: 5,
+  demoPassword: 'Demo!2026x',
   maxFileBytes: 2000000,
   tickMs: 3000,
   warnFactor: 1.5,
@@ -192,6 +195,13 @@ var SIM = {
   free: { base: 2.0, sd: 0.04, span: 0.6 }
 };
 
+var DEMO_ACCOUNTS = [
+  { email: 'admin@demo.local', name: 'Demo ZEMA administrator', position: 'Senior Inspector', staff: 'DEMO-ADM', role: 'inspector', admin: true },
+  { email: 'inspector@demo.local', name: 'Demo inspector', position: 'Inspector', staff: 'DEMO-001', role: 'inspector' },
+  { email: 'operator.c@demo.local', name: 'Demo operator officer', position: 'Environmental Officer', role: 'operator', op: 'c' },
+  { email: 'operator.a@demo.local', name: 'Demo operator, Mine A', position: 'Environmental Officer', role: 'operator', op: 'a' }
+];
+
 var DOC_TYPES = {
   operator: ['Monthly monitoring report', 'Quarterly monitoring report', 'Annual environmental report', 'Incident investigation report', 'Laboratory certificate', 'Other'],
   inspector: ['Inspection report', 'Audit report', 'Compliance letter', 'Other']
@@ -202,7 +212,7 @@ var PARAM_GROUPS = ['Heavy metal', 'Physical', 'Nutrient', 'Organic', 'Microbiol
 function buildSeed(now) {
   var d = function (days, h) { return now + days * DAY + (h || 0) * 3600000; };
   var s = {
-    v: 2, seq: 1, created: now,
+    v: 3, seq: 1, created: now, accounts: [],
     profiles: {},
     params: JSON.parse(JSON.stringify(DEFAULT_PARAMS)),
     results: [], items: [], docs: [], inspections: [], incidents: [], complaints: [], log: [], schedule: []
@@ -264,7 +274,7 @@ function save() {
   catch (e) { storageOk = false; storageMsg = 'Browser storage is full or blocked. New entries are kept only until the page is closed. Remove large files or use Reset demo.'; }
 }
 function load() {
-  try { var raw = localStorage.getItem(CONFIG.storageKey); if (raw) { S = JSON.parse(raw); if (S && S.v === 2) { return false; } } } catch (e) { /* ignore */ }
+  try { var raw = localStorage.getItem(CONFIG.storageKey); if (raw) { S = JSON.parse(raw); if (S && S.v === 3) { return false; } } } catch (e) { /* ignore */ }
   S = buildSeed(now());
   return true;
 }
@@ -466,12 +476,11 @@ function closeItem(it, u, note) {
 }
 
 /* ---------------- UI state ---------------- */
-var ui = { role: 'operator', op: 'c', tab: 'dashboard', sel: 'c|out|ec', paused: false, f: {}, repOp: 'c' };
+var ui = { auth: 'signin', role: 'operator', op: 'c', tab: '', sel: 'c|out|ec', paused: false, f: {}, repOp: 'c', focus: '' };
 function user() {
-  var p = S.profiles[ui.role] || {};
-  if (ui.role === 'operator') { return { role: 'operator', name: p.name || 'Unnamed operator user', position: p.position || '', op: ui.op }; }
-  if (ui.role === 'inspector') { return { role: 'inspector', name: p.name || 'Unnamed inspector', position: p.position || 'Inspector', staff: p.staff || '' }; }
-  return { role: 'community', name: 'Community member' };
+  var a = currentAccount();
+  if (!a) { return { role: 'community', name: 'Community member' }; }
+  return { role: a.role, name: a.name, position: a.position, staff: a.staff, op: a.op };
 }
 var TABS = {
   operator: [['dashboard', 'Live dashboard'], ['lab', 'Laboratory results'], ['actions', 'Actions'], ['docs', 'Reports'], ['incidents', 'Incidents'], ['notices', 'Notices'], ['schedule', 'Sampling schedule'], ['licence', 'Licence'], ['limits', 'Limit register'], ['report', 'Compliance report'], ['log', 'Activity log']],
@@ -493,6 +502,7 @@ function applyF(tab, list, statusFn, textFn) {
   return list.filter(function (r) {
     if (ui.role === 'operator' && r.op !== undefined && r.op !== ui.op) { return false; }
     if (f.op && r.op !== f.op) { return false; }
+    if (!f.op && ui.role === 'inspector' && ui.focus && r.op !== undefined && r.op !== ui.focus) { return false; }
     if (f.status && statusFn(r) !== f.status) { return false; }
     if (q && textFn(r).toLowerCase().indexOf(q) < 0) { return false; }
     return true;
@@ -503,6 +513,10 @@ function applyF(tab, list, statusFn, textFn) {
 function render() {
   $('clock').textContent = fclock(now());
   $('storage-note').innerHTML = storageOk ? '' : '<div class="note">' + esc(storageMsg) + '</div>';
+  var acct = currentAccount();
+  if (!acct) { session = null; renderNav(); $('main').innerHTML = R.auth(); return; }
+  ui.role = acct.role; if (acct.role === 'operator') { ui.op = acct.op; }
+  if (!ui.tab || !tabsFor(acct).some(function (x) { return x[0] === ui.tab; })) { ui.tab = tabsFor(acct)[0][0]; }
   renderNav();
   var fn = R[ui.tab]; $('main').innerHTML = fn ? fn() : '';
   if (ui.tab === 'dashboard') { drawChart(); }
@@ -522,15 +536,30 @@ function counts() {
   }
   return c;
 }
+function tabsFor(a) { var t = TABS[a.role].slice(); if (a.admin) { t.push(['accounts', 'User accounts']); } return t; }
 function renderNav() {
+  var acct = currentAccount();
+  $('signed-in').style.display = acct ? '' : 'none';
+  $('signed-out').style.display = acct ? 'none' : '';
+  if (!acct) { $('tabs').innerHTML = ''; $('tabs').style.display = 'none'; return; }
+  $('tabs').style.display = '';
   var c = counts();
-  $('tabs').innerHTML = TABS[ui.role].map(function (t) {
+  c.accounts = S.accounts.filter(function (x) { return x.status === 'Pending approval'; }).length;
+  $('tabs').innerHTML = tabsFor(acct).map(function (t) {
     var n = c[t[0]] || 0;
     return '<button data-tab="' + t[0] + '" class="' + (ui.tab === t[0] ? 'active' : '') + '">' + esc(t[1]) + (n ? '<span class="cnt">' + n + '</span>' : '') + '</button>';
-  }).join('');
-  $('op-wrap').style.display = ui.role === 'operator' ? '' : 'none';
-  var u = user();
-  $('who').textContent = ui.role === 'community' ? 'Community member' : u.name + (ui.role === 'inspector' && u.staff ? ' (' + u.staff + ')' : '');
+  }).join('') + quickMenu();
+  $('focus-wrap').style.display = ui.role === 'inspector' ? '' : 'none';
+  $('who').textContent = acct.name + (acct.role === 'inspector' ? ' (' + (acct.admin ? 'ZEMA administrator' : 'ZEMA inspector') + ')' : ' (' + opName(acct.op) + ')');
+}
+var QUICK = {
+  operator: [['lab', 'Laboratory result'], ['doc-op', 'Report upload'], ['incident', 'Incident report']],
+  inspector: [['inspection', 'Inspection'], ['doc-ins', 'Report upload'], ['notice', 'Notice or order'], ['param', 'Parameter and limit']],
+  community: []
+};
+function quickMenu() {
+  var q = QUICK[ui.role]; if (!q.length) { return ''; }
+  return '<span style="margin-left:auto;padding:6px 0"><select id="quick" aria-label="Create new"><option value="">+ New ...</option>' + q.map(function (x) { return '<option value="' + x[0] + '">' + esc(x[1]) + '</option>'; }).join('') + '</select></span>';
 }
 function kpi(v, l, bad) { return '<div class="kpi"><div class="v' + (bad ? ' bad' : '') + '">' + v + '</div><div class="l">' + esc(l) + '</div></div>'; }
 function opStats(id) {
@@ -819,17 +848,17 @@ var FORMS = {
       row('Title', '<input type="text" name="title" required style="width:100%">') + row('Notes (optional)', '<textarea name="notes" rows="2"></textarea>') + row('File (PDF, Word or Excel, up to 2 MB)', '<input type="file" name="file">') + actionsFooter('Upload')];
   },
   'doc-ins': function () {
-    return ['Upload a regulator report', '<form id="mf" data-kind="doc"><div class="form-grid">' + row('Operator', opSelect('op', 'c')) + row('Report type', '<select name="type">' + DOC_TYPES.inspector.map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '</select>') + '</div>' +
+    return ['Upload a regulator report', '<form id="mf" data-kind="doc"><div class="form-grid">' + row('Operator', opSelect('op', ui.focus || 'c')) + row('Report type', '<select name="type">' + DOC_TYPES.inspector.map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '</select>') + '</div>' +
       row('Title', '<input type="text" name="title" required style="width:100%">') + '<div class="form-grid">' + row('Period covered', '<input type="text" name="period" required>') + row('Days allowed for required actions', '<input type="number" name="dueDays" value="14" min="1">') + '</div>' +
       row('Required actions for the operator, one per line (optional)', '<textarea name="suggestions" rows="3"></textarea>') + row('Notes (optional)', '<textarea name="notes" rows="2"></textarea>') + row('File (up to 2 MB)', '<input type="file" name="file">') + actionsFooter('Upload and issue')];
   },
   inspection: function () {
-    return ['Record an inspection', '<form id="mf" data-kind="inspection"><div class="form-grid">' + row('Operator', opSelect('op', 'c')) + row('Date of visit', '<input type="date" name="date" required value="' + isoDate(now()) + '">') + '</div>' +
+    return ['Record an inspection', '<form id="mf" data-kind="inspection"><div class="form-grid">' + row('Operator', opSelect('op', ui.focus || 'c')) + row('Date of visit', '<input type="date" name="date" required value="' + isoDate(now()) + '">') + '</div>' +
       row('Findings', '<textarea name="findings" rows="4" required></textarea>') + row('Required actions for the operator, one per line', '<textarea name="suggestions" rows="3"></textarea>') + '<div class="form-grid">' + row('Days allowed for actions', '<input type="number" name="dueDays" value="14" min="1">') + row('Photos (up to 3)', '<input type="file" name="photos" accept="image/*" multiple>') + '</div>' +
       row('Inspection report file (optional, up to 2 MB)', '<input type="file" name="file">') + actionsFooter('Save inspection')];
   },
   notice: function () {
-    return ['Issue a notice or compliance order', '<form id="mf" data-kind="notice"><div class="form-grid">' + row('Operator', opSelect('op', 'c')) + row('Type', '<select name="type"><option>Compliance notice</option><option>Compliance order</option><option>Warning letter</option></select>') + '</div>' +
+    return ['Issue a notice or compliance order', '<form id="mf" data-kind="notice"><div class="form-grid">' + row('Operator', opSelect('op', ui.focus || 'c')) + row('Type', '<select name="type"><option>Compliance notice</option><option>Compliance order</option><option>Warning letter</option></select>') + '</div>' +
       row('Required action', '<textarea name="text" rows="3" required></textarea>') + row('Deadline', '<input type="date" name="deadline" required value="' + isoDate(now() + 14 * DAY) + '">') + actionsFooter('Issue')];
   },
   incident: function () {
@@ -873,8 +902,15 @@ function submitForm(f) {
   var kind = f.getAttribute('data-kind'), id = f.getAttribute('data-id'), u = user(), t = now(), v = function (n) { var e = f.elements[n]; return e ? e.value.trim() : ''; };
   var err = function (m) { $('ferr').textContent = m; };
   var done = function () { save(); closeModal(); render(); };
-  if (kind === 'profile') { S.profiles[ui.role] = { name: v('name'), position: v('position'), staff: v('staff') }; logAct(user(), '', 'Updated user details'); return done(); }
-  if (ui.role !== 'community' && !(S.profiles[ui.role] && S.profiles[ui.role].name)) { return err('Add your name first with the Your details button at the top.'); }
+  if (!currentAccount()) { closeModal(); render(); return; }
+  if (kind === 'approve' || kind === 'reject') {
+    var ac = acctById(id);
+    if (kind === 'approve') { ac.role = v('role'); ac.op = ac.role === 'operator' ? v('op') : ''; ac.staff = ac.role === 'inspector' ? v('staff') : ''; ac.admin = ac.role === 'inspector' && f.elements.admin.checked; ac.status = 'Active'; }
+    else { ac.status = 'Rejected'; }
+    ac.approvedBy = who(u); ac.approvedAt = t;
+    logAct(u, ac.op, (kind === 'approve' ? 'Approved account ' : 'Rejected account ') + ac.id + ' for ' + ac.email + (kind === 'approve' ? ' as ' + (ac.admin ? 'ZEMA administrator' : ac.role === 'inspector' ? 'ZEMA inspector' : 'operator, ' + opName(ac.op)) : ': ' + v('comment')));
+    return done();
+  }
   if (kind === 'lab') {
     var vals = {}, n = 0;
     params('lab').forEach(function (p) { var x = v('v_' + p.id); if (x !== '') { vals[p.id] = parseFloat(x); n += 1; } });
@@ -952,6 +988,205 @@ function exportCsv(which) {
   download('ecm-' + which + '-' + d + '.csv', rows.map(function (r) { return r.map(csvCell).join(','); }).join('\n'), 'text/csv');
 }
 
+/* ---------------- accounts and sign in (demonstration) ----------------
+   Passwords are hashed in the browser with PBKDF2 and kept in this browser only.
+   Emails are shown on screen because a static site cannot send email.
+   Version 0.3 moves accounts to a server with real email delivery. */
+var SESSION_KEY = 'ecm-zambia-session';
+var session = null;
+var enc = new TextEncoder();
+function hex(buf) { return Array.prototype.map.call(new Uint8Array(buf), function (b) { return b.toString(16).padStart(2, '0'); }).join(''); }
+function randomToken() { var a = new Uint8Array(16); crypto.getRandomValues(a); return hex(a.buffer); }
+function hashPw(pw, salt) {
+  return crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveBits']).then(function (key) {
+    return crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' }, key, 256);
+  }).then(hex);
+}
+function pwProblems(pw) {
+  var p = [];
+  if (pw.length < 10) { p.push('at least 10 characters'); }
+  if (!/[A-Z]/.test(pw)) { p.push('a capital letter'); }
+  if (!/[a-z]/.test(pw)) { p.push('a small letter'); }
+  if (!/[0-9]/.test(pw)) { p.push('a number'); }
+  if (!/[^A-Za-z0-9]/.test(pw)) { p.push('a symbol such as ! or #'); }
+  return p;
+}
+function acctByEmail(e) { e = e.trim().toLowerCase(); for (var i = 0; i < S.accounts.length; i++) { if (S.accounts[i].email === e) { return S.accounts[i]; } } return null; }
+function acctById(id) { for (var i = 0; i < S.accounts.length; i++) { if (S.accounts[i].id === id) { return S.accounts[i]; } } return null; }
+function currentAccount() { if (!session) { return null; } var a = acctById(session.id); return a && a.status === 'Active' ? a : null; }
+function loadSession() {
+  try { var s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); if (s && now() - s.last < CONFIG.sessionMinutes * 60000) { session = s; } else { localStorage.removeItem(SESSION_KEY); } } catch (e) { session = null; }
+}
+function saveSession() { try { if (session) { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } else { localStorage.removeItem(SESSION_KEY); } } catch (e) { /* ignore */ } }
+var SYS = { role: 'system', name: 'Sign in service' };
+function acctUser(a) { return { role: a.role, name: a.name, position: a.position, staff: a.staff }; }
+
+function seedAccounts(t) {
+  S.accounts = [];
+  return DEMO_ACCOUNTS.reduce(function (p, d) {
+    return p.then(function () {
+      var salt = randomToken();
+      return hashPw(CONFIG.demoPassword, salt).then(function (h) {
+        S.accounts.push({ id: nextRef('USR'), email: d.email, name: d.name, position: d.position, staff: d.staff || '', role: d.role, op: d.op || '', admin: !!d.admin,
+          salt: salt, hash: h, verified: true, status: 'Active', created: t, approvedBy: 'Demonstration setup', approvedAt: t, lastLogin: null, failed: 0, lockedUntil: 0, token: '', tokenKind: '', tokenExp: 0, sample: true });
+      });
+    });
+  }, Promise.resolve());
+}
+
+function signOut(reason) {
+  var a = currentAccount();
+  if (a) { logAct(acctUser(a), a.op, reason || 'Signed out'); save(); }
+  session = null; saveSession(); ui.auth = 'signin'; ui.tab = '';
+  closeModal(); render();
+  if (reason) { flash(reason); }
+}
+function touchSession() { if (session) { session.last = now(); if (!touchSession.t || now() - touchSession.t > 15000) { touchSession.t = now(); saveSession(); } } }
+
+/* ---------------- auth screens ---------------- */
+function demoAccountsBox() {
+  return '<div class="card mt"><h3>Demonstration accounts</h3><p class="small muted">All use the password ' + esc(CONFIG.demoPassword) + '. Real accounts are created with Create an account.</p><table>' +
+    DEMO_ACCOUNTS.map(function (d) { return '<tr><td>' + esc(d.name) + '<div class="small muted">' + esc(d.admin ? 'ZEMA administrator' : d.role === 'inspector' ? 'ZEMA inspector' : 'Operator, ' + opName(d.op)) + '</div></td><td class="small">' + esc(d.email) + '</td><td><button class="btn small alt" data-fill="' + esc(d.email) + '">Use</button></td></tr>'; }).join('') + '</table></div>';
+}
+function pwField(name, label, auto) {
+  return row(label, '<input type="password" name="' + name + '" autocomplete="' + auto + '" required style="width:100%">');
+}
+function showPw() { return '<label class="small" style="display:inline-flex;gap:6px;align-items:center;margin-bottom:8px"><input type="checkbox" data-showpw="1"> Show password</label>'; }
+var RULES = '<p class="small muted">Password: at least 10 characters with a capital letter, a small letter, a number and a symbol.</p>';
+R.auth = function () {
+  var v = ui.auth || 'signin', h = '<div style="max-width:560px;margin:10px auto">';
+  if (v === 'signin') {
+    h += '<div class="card"><h2 class="page">Sign in</h2><p class="lead">Environmental compliance monitoring for operators and ZEMA inspectors.</p><form id="af" data-kind="signin">' + row('Email address', '<input type="text" name="email" autocomplete="username" required style="width:100%" value="' + esc(ui.fillEmail || '') + '">') + pwField('password', 'Password', 'current-password') + showPw() +
+      '<div class="err" id="aerr"></div><div class="form-actions" style="justify-content:space-between"><span><button type="button" class="btn alt small" data-auth="forgot">Forgot password</button></span><button type="submit" class="btn">Sign in</button></div></form>' +
+      '<p class="mt">New user? <button class="btn alt small" data-auth="signup">Create an account</button></p><p>Community member? <button class="btn alt small" data-auth="concern">Report a pollution concern</button> (no account needed)</p></div>' + demoAccountsBox();
+  } else if (v === 'signup') {
+    h += '<div class="card"><h2 class="page">Create an account</h2><p class="lead">After you verify your email, a ZEMA administrator approves your account and role before you can sign in.</p><form id="af" data-kind="signup">' +
+      row('Full name', '<input type="text" name="name" required style="width:100%">') + row('Work email address', '<input type="email" name="email" required style="width:100%">') +
+      '<div class="form-grid">' + row('I am', '<select name="role" id="su-role"><option value="operator">A mine operator</option><option value="inspector">A ZEMA inspector</option></select>') + row('Position', '<input type="text" name="position" required>') + '</div>' +
+      '<div class="form-grid"><div id="su-op">' + row('Mine', opSelect('op', 'c')) + '</div><div id="su-staff" style="display:none">' + row('Staff number', '<input type="text" name="staff">') + '</div></div>' +
+      pwField('password', 'Password', 'new-password') + pwField('confirm', 'Confirm password', 'new-password') + showPw() + RULES +
+      '<div class="err" id="aerr"></div><div class="form-actions"><button type="button" class="btn alt" data-auth="signin">Back to sign in</button><button type="submit" class="btn">Create account</button></div></form></div>';
+  } else if (v === 'forgot') {
+    h += '<div class="card"><h2 class="page">Forgot password</h2><p class="lead">Enter your email address. If an account exists, a reset link is sent to it.</p><form id="af" data-kind="forgot">' + row('Email address', '<input type="text" name="email" required style="width:100%">') +
+      '<div class="err" id="aerr"></div><div class="form-actions"><button type="button" class="btn alt" data-auth="signin">Back to sign in</button><button type="submit" class="btn">Send reset link</button></div></form></div>';
+  } else if (v === 'reset') {
+    h += '<div class="card"><h2 class="page">Set a new password</h2><form id="af" data-kind="reset">' + pwField('password', 'New password', 'new-password') + pwField('confirm', 'Confirm new password', 'new-password') + showPw() + RULES +
+      '<div class="err" id="aerr"></div><div class="form-actions"><button type="submit" class="btn">Save new password</button></div></form></div>';
+  } else if (v === 'mail') {
+    var m = ui.mail;
+    h += '<div class="note"><b>Demonstration email.</b> In the real system this message is emailed to ' + esc(m.to) + '. It is shown here because this prototype cannot send email.</div>' +
+      '<div class="card"><dl class="kv small"><dt>From</dt><dd>Environmental Compliance Monitor (no reply)</dd><dt>To</dt><dd>' + esc(m.to) + '</dd><dt>Subject</dt><dd>' + esc(m.subject) + '</dd><dt>Sent</dt><dd>' + ftime(m.t) + '</dd></dl><hr style="border:0;border-top:1px solid var(--line);margin:12px 0">' +
+      m.body.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '<p><button class="btn" data-token="' + esc(m.token) + '">' + esc(m.button) + '</button></p><p class="small muted">This link expires in ' + m.hours + ' hours. If you did not ask for this, ignore this email.</p></div>' +
+      '<p class="mt"><button class="btn alt small" data-auth="signin">Back to sign in</button></p>';
+  } else if (v === 'sent') {
+    h += '<div class="card"><h2 class="page">Check your email</h2><p>If an account exists for that address, a password reset link has been sent.</p><button class="btn alt" data-auth="signin">Back to sign in</button></div>';
+  } else if (v === 'concern') {
+    h += '<div class="card"><h2 class="page">Report a pollution concern</h2><p class="lead">No account needed. Your name and contact are optional.</p>' + concernForm() + '</div><p class="mt"><button class="btn alt small" data-auth="signin">Back to sign in</button></p>';
+  }
+  return h + '</div>';
+};
+function sendMail(a, kind) {
+  a.token = randomToken(); a.tokenKind = kind; a.tokenExp = now() + (kind === 'verify' ? 24 : 1) * 3600000;
+  ui.mail = kind === 'verify'
+    ? { to: a.email, subject: 'Verify your email address', t: now(), token: a.token, hours: 24, button: 'Verify my email address',
+        body: ['Hello ' + a.name + ',', 'Thank you for creating an account on the Environmental Compliance Monitor.', 'Please confirm that this is your email address. After that, a ZEMA administrator will review your account before you can sign in.'] }
+    : { to: a.email, subject: 'Reset your password', t: now(), token: a.token, hours: 1, button: 'Reset my password',
+        body: ['Hello ' + a.name + ',', 'We received a request to reset the password for your Environmental Compliance Monitor account.', 'Use the button below to choose a new password.'] };
+  ui.auth = 'mail';
+}
+function authSubmit(f) {
+  var kind = f.getAttribute('data-kind'), v = function (n) { var e = f.elements[n]; return e ? e.value.trim() : ''; };
+  var err = function (m) { $('aerr').textContent = m; };
+  if (!window.crypto || !crypto.subtle) { return err('This browser does not allow secure sign in from this location. Open the prototype from its https web address.'); }
+  if (kind === 'signin') {
+    var a = acctByEmail(v('email')), pw = f.elements.password.value;
+    if (!a) { logAct(SYS, '', 'Failed sign in for ' + v('email').toLowerCase() + ': no such account'); save(); return err('Email or password is not correct.'); }
+    if (a.lockedUntil > now()) { return err('Too many failed attempts. Try again after ' + ftime(a.lockedUntil).split(', ')[1] + ' or reset your password.'); }
+    hashPw(pw, a.salt).then(function (h) {
+      if (h !== a.hash) {
+        a.failed += 1;
+        if (a.failed >= CONFIG.maxFailed) { a.lockedUntil = now() + CONFIG.lockMinutes * 60000; a.failed = 0; logAct(SYS, a.op, 'Account ' + a.email + ' locked for ' + CONFIG.lockMinutes + ' minutes after ' + CONFIG.maxFailed + ' failed sign ins'); }
+        else { logAct(SYS, a.op, 'Failed sign in for ' + a.email + ': wrong password'); }
+        save(); return err('Email or password is not correct.');
+      }
+      if (a.status === 'Pending verification') { return err('Verify your email address first. Use the link in the verification email, or create the account again to resend it.'); }
+      if (a.status === 'Pending approval') { return err('Your email is verified. A ZEMA administrator must approve your account before you can sign in.'); }
+      if (a.status !== 'Active') { return err('This account is ' + a.status.toLowerCase() + '. Contact a ZEMA administrator.'); }
+      a.failed = 0; a.lastLogin = now();
+      session = { id: a.id, last: now() }; saveSession();
+      ui.role = a.role; if (a.role === 'operator') { ui.op = a.op; ui.sel = a.op + '|out|ec'; }
+      ui.tab = TABS[a.role][0][0]; ui.fillEmail = '';
+      logAct(acctUser(a), a.op, 'Signed in'); save(); render();
+    });
+    return;
+  }
+  if (kind === 'signup') {
+    var email = v('email').toLowerCase(), p1 = f.elements.password.value, p2 = f.elements.confirm.value, role = v('role');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { return err('Enter a valid email address.'); }
+    var ex = acctByEmail(email);
+    if (ex && ex.status !== 'Pending verification') { return err('An account with this email already exists. Sign in or use Forgot password.'); }
+    var probs = pwProblems(p1); if (probs.length) { return err('The password needs ' + probs.join(', ') + '.'); }
+    if (p1 !== p2) { return err('The two passwords do not match.'); }
+    if (role === 'inspector' && !v('staff')) { return err('Enter your staff number.'); }
+    var salt = randomToken();
+    hashPw(p1, salt).then(function (h) {
+      var a = ex || { id: nextRef('USR'), created: now(), failed: 0, lockedUntil: 0, lastLogin: null, admin: false, approvedBy: '', approvedAt: null };
+      a.email = email; a.name = v('name'); a.position = v('position'); a.role = role; a.op = role === 'operator' ? v('op') : ''; a.staff = role === 'inspector' ? v('staff') : '';
+      a.salt = salt; a.hash = h; a.verified = false; a.status = 'Pending verification';
+      if (!ex) { S.accounts.push(a); }
+      logAct({ role: role, name: a.name }, a.op, 'Created account ' + a.id + ' for ' + email + ' as ' + (role === 'inspector' ? 'ZEMA inspector' : 'operator, ' + opName(a.op)) + '; verification email sent');
+      sendMail(a, 'verify'); save(); render();
+    });
+    return;
+  }
+  if (kind === 'forgot') {
+    var b = acctByEmail(v('email'));
+    if (b && b.verified && b.status !== 'Rejected') { sendMail(b, 'reset'); logAct(SYS, b.op, 'Password reset email sent to ' + b.email); }
+    else { ui.auth = 'sent'; logAct(SYS, '', 'Password reset requested for ' + v('email').toLowerCase() + ', no email sent'); }
+    save(); render(); return;
+  }
+  if (kind === 'reset') {
+    var c = acctById(ui.resetFor), q1 = f.elements.password.value, q2 = f.elements.confirm.value;
+    if (!c) { return err('This reset link is no longer valid.'); }
+    var pr = pwProblems(q1); if (pr.length) { return err('The password needs ' + pr.join(', ') + '.'); }
+    if (q1 !== q2) { return err('The two passwords do not match.'); }
+    var s2 = randomToken();
+    hashPw(q1, s2).then(function (h) { c.salt = s2; c.hash = h; c.failed = 0; c.lockedUntil = 0; logAct(acctUser(c), c.op, 'Password reset'); save(); ui.auth = 'signin'; ui.fillEmail = c.email; render(); flash('Password changed. Sign in with your new password.'); });
+  }
+}
+function useToken(tok) {
+  var a = null; S.accounts.forEach(function (x) { if (x.token && x.token === tok) { a = x; } });
+  if (!a || a.tokenExp < now()) { ui.auth = 'signin'; render(); flash('This link has expired or was already used.'); return; }
+  var kind = a.tokenKind; a.token = ''; a.tokenKind = '';
+  if (kind === 'verify') {
+    a.verified = true; a.status = 'Pending approval';
+    logAct({ role: a.role, name: a.name }, a.op, 'Verified email ' + a.email + '; account waiting for approval');
+    save(); ui.auth = 'signin'; ui.fillEmail = a.email; render(); flash('Email verified. A ZEMA administrator must approve your account before you can sign in.');
+  } else { ui.resetFor = a.id; ui.auth = 'reset'; save(); render(); }
+}
+
+/* ---------------- account administration ---------------- */
+R.accounts = function () {
+  var list = applyF('accounts', S.accounts, function (a) { return a.status; }, function (a) { return a.name + ' ' + a.email + ' ' + a.position + ' ' + a.staff + ' ' + opName(a.op); });
+  var h = '<h2 class="page">User accounts</h2><p class="lead">New accounts verify their email, then wait here for approval. Approve only people you can confirm, and check the role and mine before approving.</p>' +
+    filterBar('accounts', ['Pending verification', 'Pending approval', 'Active', 'Suspended', 'Rejected'], false) + '</div><div class="card"><table><tr><th>Name and email</th><th>Role</th><th>Created</th><th>Email verified</th><th>Last sign in</th><th>Status</th><th class="no-print"></th></tr>';
+  list.forEach(function (a) {
+    var b = '', me = currentAccount();
+    if (a.status === 'Pending approval') { b = '<button class="btn small" data-approve="' + a.id + '">Approve</button> <button class="btn small alt" data-reject="' + a.id + '">Reject</button>'; }
+    else if (a.status === 'Active' && (!me || me.id !== a.id)) { b = '<button class="btn small alt" data-suspend="' + a.id + '">Suspend</button>'; }
+    else if (a.status === 'Suspended') { b = '<button class="btn small alt" data-reactivate="' + a.id + '">Reactivate</button>'; }
+    h += '<tr><td>' + esc(a.name) + sampleTag(a) + '<div class="small muted">' + esc(a.email) + '</div></td><td>' + esc(a.admin ? 'ZEMA administrator' : a.role === 'inspector' ? 'ZEMA inspector' : 'Operator') + '<div class="small muted">' + esc(a.role === 'operator' ? opName(a.op) : a.staff) + ', ' + esc(a.position) + '</div></td><td class="nw">' + ftime(a.created) + '</td><td>' + (a.verified ? pill('Yes', 'ok') : pill('No', 'neutral')) + '</td><td class="nw">' + (a.lastLogin ? ftime(a.lastLogin) : '<span class="muted">Never</span>') + '</td><td>' +
+      pill(a.status, a.status === 'Active' ? 'ok' : a.status === 'Pending approval' ? 'warn' : a.status === 'Pending verification' ? 'neutral' : 'bad') + (a.approvedAt && a.approvedBy ? '<div class="small muted">' + esc(a.status === 'Active' ? 'Approved' : 'Updated') + ' by ' + esc(a.approvedBy) + '</div>' : '') + '</td><td class="no-print">' + b + '</td></tr>';
+  });
+  return h + '</table></div>';
+};
+function approveForm(a) {
+  return ['Approve account, ' + a.name, '<form id="mf" data-kind="approve" data-id="' + a.id + '"><p class="small">' + esc(a.email) + ', ' + esc(a.position) + '</p><div class="form-grid">' +
+    row('Role', '<select name="role"><option value="operator"' + (a.role === 'operator' ? ' selected' : '') + '>Operator</option><option value="inspector"' + (a.role === 'inspector' ? ' selected' : '') + '>ZEMA inspector</option></select>') +
+    row('Mine (operators only)', opSelect('op', a.op || 'c')) + '</div>' + row('Staff number (inspectors only)', '<input type="text" name="staff" value="' + esc(a.staff) + '">') +
+    '<label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" name="admin"> Also a ZEMA administrator (can approve accounts)</label>' + actionsFooter('Approve account')];
+}
+
 /* ---------------- events ---------------- */
 document.addEventListener('click', function (e) {
   var t = e.target, a;
@@ -975,30 +1210,35 @@ document.addEventListener('click', function (e) {
   if (t.id === 'pause-btn') { ui.paused = !ui.paused; render(); return; }
   if (t.id === 'breach-btn') { var list = Object.keys(series).filter(function (k) { return series[k].op === ui.op && series[k].point === 'out'; }); var s = series[list[Math.floor(rnd() * list.length)]]; startSpike(s); ui.sel = skey(s.op, s.point, s.param); flash('A breach is being simulated on ' + param(s.param).label + ' at the final effluent outlet. Watch the chart.'); render(); return; }
   if (t.id === 'print-btn') { window.print(); return; }
-  if (t.id === 'profile-btn') { var f9 = FORMS.profile(); openModal(f9[0], f9[1]); return; }
+  if ((a = t.getAttribute('data-auth'))) { ui.auth = a; render(); window.scrollTo(0, 0); return; }
+  if ((a = t.getAttribute('data-fill'))) { ui.fillEmail = a; ui.auth = 'signin'; render(); var pwf = document.querySelector('#af input[name=password]'); if (pwf) { pwf.focus(); } return; }
+  if ((a = t.getAttribute('data-token'))) { useToken(a); return; }
+  if ((a = t.getAttribute('data-approve'))) { var fa = approveForm(acctById(a)); openModal(fa[0], fa[1]); return; }
+  if ((a = t.getAttribute('data-reject'))) { var fr = reviewForm('reject', a); fr[0] = 'Reject account'; openModal(fr[0], fr[1]); return; }
+  if ((a = t.getAttribute('data-suspend')) || (a = t.getAttribute('data-reactivate'))) { var sa = acctById(a), sus = !!t.getAttribute('data-suspend'); sa.status = sus ? 'Suspended' : 'Active'; sa.approvedBy = who(user()); sa.approvedAt = now(); logAct(user(), sa.op, (sus ? 'Suspended account ' : 'Reactivated account ') + sa.id + ' for ' + sa.email); save(); render(); return; }
+  if (t.id === 'signout-btn') { signOut('Signed out'); return; }
   if (t.id === 'data-btn') { openModal('Data and export', dataPanel()); return; }
   if (t.id === 'backup-btn') { download('ecm-backup-' + isoDate(now()) + '.json', JSON.stringify(S), 'application/json'); return; }
-  if (t.id === 'reset-btn') { if ($('reset-confirm').value.trim().toUpperCase() === 'RESET') { try { localStorage.removeItem(CONFIG.storageKey); } catch (x) { /* ignore */ } start(true); closeModal(); flash('Demonstration data reset.'); } else { $('ferr').textContent = 'Type RESET in the box to confirm.'; } return; }
+  if (t.id === 'reset-btn') { if ($('reset-confirm').value.trim().toUpperCase() === 'RESET') { try { localStorage.removeItem(CONFIG.storageKey); } catch (x) { /* ignore */ } session = null; saveSession(); ui.auth = 'signin'; start(true); closeModal(); flash('Demonstration data reset.'); } else { $('ferr').textContent = 'Type RESET in the box to confirm.'; } return; }
 });
 document.addEventListener('submit', function (e) {
   e.preventDefault();
   var f = e.target;
   if (f.id === 'f-concern') {
     var v = function (n) { return f.elements[n].value.trim(); };
-    readPhotos(f.elements.photos.files).then(function (ph) { var r = api.addComplaint({ name: v('name'), contact: v('contact'), op: v('op'), location: v('location'), desc: v('desc'), photos: ph }, now()); save(); render(); flash('Thank you. Your concern was sent with reference ' + r.id + '.'); }).catch(function (x) { $('err-concern').textContent = x.message; });
+    readPhotos(f.elements.photos.files).then(function (ph) { var r = api.addComplaint({ name: v('name'), contact: v('contact'), op: v('op'), location: v('location'), desc: v('desc'), photos: ph }, now()); save(); if (!currentAccount()) { ui.auth = 'signin'; } render(); flash('Thank you. Your concern was sent with reference ' + r.id + '.'); }).catch(function (x) { $('err-concern').textContent = x.message; });
     return;
   }
   if (f.id === 'mf') { submitForm(f); }
+  if (f.id === 'af') { authSubmit(f); }
 });
 document.addEventListener('change', function (e) {
   var t = e.target, a;
-  if (t.id === 'role') {
-    ui.role = t.value; ui.tab = TABS[ui.role][0][0]; render();
-    if (ui.role !== 'community' && !(S.profiles[ui.role] && S.profiles[ui.role].name)) { var f = FORMS.profile(); openModal(f[0], f[1]); }
-    return;
-  }
-  if (t.id === 'op-select') { ui.op = t.value; ui.sel = ui.op + '|out|ec'; render(); return; }
+  if (t.id === 'su-role') { $('su-op').style.display = t.value === 'operator' ? '' : 'none'; $('su-staff').style.display = t.value === 'inspector' ? '' : 'none'; return; }
+  if (t.getAttribute && t.getAttribute('data-showpw')) { var fm = t.closest('form'); Array.prototype.forEach.call(fm.querySelectorAll('input[name=password],input[name=confirm]'), function (el) { el.type = t.checked ? 'text' : 'password'; }); return; }
   if (t.id === 'rep-op') { ui.repOp = t.value; render(); return; }
+  if (t.id === 'quick') { var qv = t.value; t.value = ''; if (qv) { var qf = FORMS[qv](); openModal(qf[0], qf[1]); } return; }
+  if (t.id === 'focus') { ui.focus = t.value; if (t.value) { ui.repOp = t.value; } render(); return; }
   if ((a = t.getAttribute('data-limit'))) {
     var parts = a.split(':'), p = param(parts[0]), val = t.value === '' ? null : parseFloat(t.value), old = p[parts[1]];
     if (val !== null && isNaN(val)) { return; }
@@ -1014,7 +1254,8 @@ document.addEventListener('input', function (e) {
   var t = e.target, a = t.getAttribute && t.getAttribute('data-f');
   if (a === 'q') { var pos = t.selectionStart, tabName = t.getAttribute('data-tab'); fstate(tabName).q = t.value; render(); var el = document.querySelector('input[data-f="q"][data-tab="' + tabName + '"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }
 });
-document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeModal(); } });
+document.addEventListener('keydown', function (e) { touchSession(); if (e.key === 'Escape') { closeModal(); } });
+document.addEventListener('mousedown', touchSession);
 function dataPanel() {
   return '<p>Export registers as CSV files for Excel, save a full backup, or restore a backup. A backup lets another computer load the same records.</p><div class="bar"><button class="btn alt" data-export="actions">Actions CSV</button><button class="btn alt" data-export="lab">Laboratory results CSV</button><button class="btn alt" data-export="docs">Reports register CSV</button><button class="btn alt" data-export="log">Activity log CSV</button></div>' +
     '<div class="bar"><button class="btn" id="backup-btn">Save full backup</button><label class="btn alt" style="display:inline-block">Restore a backup <input type="file" id="restore-file" accept=".json,application/json" style="display:none"></label></div>' +
@@ -1024,7 +1265,11 @@ function dataPanel() {
 /* ---------------- start ---------------- */
 function start(fresh) {
   var isNew = fresh ? (S = buildSeed(now()), true) : load();
-  if (isNew) { seedRecords(api, now()); }
+  if (!window.crypto || !crypto.subtle) { $('main').innerHTML = '<div class="card"><h2 class="page">Secure sign in is not available here</h2><p>Open the prototype from its https web address, or with Chrome, Edge or Firefox.</p></div>'; return; }
+  (isNew ? seedAccounts(now()).then(function () { seedRecords(api, now()); }) : Promise.resolve()).then(function () { finishStart(); });
+}
+function finishStart() {
+  loadSession();
   rebuildOpenLive();
   initSeries();
   var t0 = now();
@@ -1034,13 +1279,16 @@ function start(fresh) {
   OPERATORS.forEach(function (o) { windows[o.id] = []; });
   Object.keys(series).forEach(function (k) { var s = series[k]; s.n = 0; s.sum = 0; s.min = Infinity; s.max = -Infinity; s.exceed = 0; s.warn = 0; });
   save();
+  started = true;
   render();
-  if (!(S.profiles[ui.role] && S.profiles[ui.role].name)) { var pf = FORMS.profile(); openModal(pf[0], pf[1]); }
 }
-$('op-select').innerHTML = OPERATORS.map(function (o) { return '<option value="' + o.id + '">' + esc(o.name + ', ' + o.town) + '</option>'; }).join('');
-$('op-select').value = ui.op;
+var started = false;
+$('focus').innerHTML = '<option value="">All mines</option>' + OPERATORS.map(function (o) { return '<option value="' + o.id + '">' + esc(o.name + ', ' + o.town) + '</option>'; }).join('');
 start(false);
 setInterval(function () {
+  if (!started) { return; }
+  if (session && now() - session.last > CONFIG.sessionMinutes * 60000) { signOut('Signed out after ' + CONFIG.sessionMinutes + ' minutes without activity'); return; }
+  if (!currentAccount()) { tick(now()); $('clock').textContent = fclock(now()); return; }
   if (ui.paused) { $('clock').textContent = fclock(now()); return; }
   dirty = false; tick(now());
   if (dirty) { save(); }
