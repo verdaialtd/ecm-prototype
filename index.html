@@ -3,734 +3,1054 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Environmental Compliance Monitor Zambia</title>
+<title>Environmental Compliance Monitor, Zambia</title>
 <style>
-  :root {
-    --bg: #f4f6f8; --card: #ffffff; --ink: #1c2630; --muted: #5a6672; --line: #dde2e7;
-    --brand: #1f5f8b; --ok: #1e7a46; --bad: #b3261e; --warn: #a15c00;
-    --okbg: #e6f3ec; --badbg: #fbe9e7; --warnbg: #fdf1dc;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  header { background: var(--brand); color: #fff; padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
-  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
-  header .sub { font-size: 12px; opacity: .85; }
-  .badge { background: rgba(255,255,255,.18); padding: 4px 10px; border-radius: 12px; font-size: 12px; }
-  nav { background: var(--card); border-bottom: 1px solid var(--line); padding: 0 24px; display: flex; gap: 4px; flex-wrap: wrap; }
-  nav button { background: none; border: 0; padding: 12px 14px; font: inherit; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; }
-  nav button.active { color: var(--brand); border-bottom-color: var(--brand); font-weight: 600; }
-  main { padding: 20px 24px 40px; max-width: 1280px; margin: 0 auto; }
-  .panel { display: none; }
-  .panel.active { display: block; }
-  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
-  select, textarea, input[type=text], input[type=number] { max-width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
-  button.btn { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--brand); background: var(--brand); color: #fff; cursor: pointer; }
-  button.btn.alt { background: #fff; color: var(--brand); }
-  button.btn.small { padding: 3px 8px; font-size: 12px; }
-  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
-  .card { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
-  .card h2, .card h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
-  table { width: 100%; border-collapse: collapse; }
-  td.nw, th.nw { white-space: nowrap; }
-  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { font-size: 12px; color: var(--muted); font-weight: 600; }
-  tr.pick { cursor: pointer; }
-  #op-points table { font-size: 13px; }
-  #op-points th, #op-points td { padding: 6px 4px; }
-  #op-points .pill { padding: 1px 6px; font-size: 11.5px; }
-  tr.pick:hover td { background: #f1f5f9; }
-  tr.sel td { background: #e8f0f7; }
-  .pill { white-space: nowrap; display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
-  .pill.ok { background: var(--okbg); color: var(--ok); }
-  .pill.bad { background: var(--badbg); color: var(--bad); }
-  .pill.warn { background: var(--warnbg); color: var(--warn); }
-  .pill.neutral { background: #eceff2; color: var(--muted); }
-  .kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 16px; }
-  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
-  .kpi .v { font-size: 26px; font-weight: 600; }
-  .kpi .l { font-size: 12px; color: var(--muted); }
-  canvas { width: 100%; height: 260px; display: block; }
-  .muted { color: var(--muted); }
-  .two { display: grid; gap: 16px; grid-template-columns: 2fr 1fr; }
-  @media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
-  .report { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 28px 32px; }
-  .report h2 { font-size: 18px; margin: 0 0 4px; }
-  .report h3 { margin: 22px 0 8px; font-size: 14px; }
-  @media print {
-    header, nav, .no-print { display: none !important; }
-    .panel { display: none !important; }
-    #panel-report { display: block !important; }
-    body { background: #fff; }
-    main { padding: 0; max-width: none; }
-    .report { border: 0; padding: 0; }
-  }
+:root {
+  --bg: #f3f6f4; --card: #ffffff; --ink: #1c2630; --muted: #5a6672; --line: #d9e0dc;
+  --brand: #1f4d2b; --gold: #c9a227; --ok: #1e7a46; --bad: #b3261e; --warn: #a15c00;
+  --okbg: #e6f3ec; --badbg: #fbe9e7; --warnbg: #fdf1dc; --tint: #eaf2ec;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { background: var(--brand); color: #fff; padding: 12px 24px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+header .sub { font-size: 12px; opacity: .85; }
+.hdr-right { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hdr-right label { font-size: 12px; opacity: .9; }
+.hdr-right select { padding: 4px 6px; }
+.badge { background: rgba(255,255,255,.16); padding: 4px 10px; border-radius: 12px; font-size: 12px; }
+.badge.link { cursor: pointer; border: 0; color: #fff; font: inherit; font-size: 12px; }
+nav { background: var(--card); border-bottom: 1px solid var(--line); padding: 0 24px; display: flex; gap: 2px; flex-wrap: wrap; }
+nav button { background: none; border: 0; padding: 11px 12px; font: inherit; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; position: relative; }
+nav button.active { color: var(--brand); border-bottom-color: var(--gold); font-weight: 600; }
+nav .cnt { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: var(--bad); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+main { padding: 18px 24px 30px; max-width: 1320px; margin: 0 auto; }
+h2.page { font-size: 17px; margin: 0 0 4px; }
+p.lead { margin: 0 0 14px; color: var(--muted); }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+select, input[type=text], input[type=number], input[type=date], input[type=datetime-local], textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; max-width: 100%; }
+textarea { width: 100%; }
+button.btn { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--brand); background: var(--brand); color: #fff; cursor: pointer; }
+button.btn.alt { background: #fff; color: var(--brand); }
+button.btn.warn { background: var(--bad); border-color: var(--bad); }
+button.btn.small { padding: 3px 8px; font-size: 12px; }
+button.btn:disabled { opacity: .5; cursor: default; }
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+.two { display: grid; gap: 14px; grid-template-columns: 2fr 1fr; }
+@media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; }
+.card h3 { margin: 0 0 10px; font-size: 14px; }
+.mt { margin-top: 14px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 6px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; }
+td.nw, th.nw { white-space: nowrap; }
+tr.pick { cursor: pointer; }
+tr.pick:hover td { background: #f1f5f2; }
+tr.sel td { background: var(--tint); }
+td.breach { color: var(--bad); font-weight: 600; }
+.pill { white-space: nowrap; display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+.pill.ok { background: var(--okbg); color: var(--ok); }
+.pill.bad { background: var(--badbg); color: var(--bad); }
+.pill.warn { background: var(--warnbg); color: var(--warn); }
+.pill.neutral { background: #eceff2; color: var(--muted); }
+.pill.sample { background: #eef1f6; color: #4a5a70; font-weight: 500; }
+.kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom: 14px; }
+.kpi { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.kpi .v { font-size: 24px; font-weight: 600; }
+.kpi .v.bad { color: var(--bad); }
+.kpi .l { font-size: 12px; color: var(--muted); }
+canvas { width: 100%; height: 250px; display: block; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.note { background: var(--warnbg); border: 1px solid #f0dcae; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
+.thumbs img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; margin: 2px 4px 2px 0; border: 1px solid var(--line); }
+dl.kv { display: grid; grid-template-columns: 170px 1fr; gap: 4px 12px; margin: 0; }
+dl.kv dt { color: var(--muted); }
+dl.kv dd { margin: 0; }
+.modal-bg { position: fixed; inset: 0; background: rgba(20,30,25,.45); display: none; align-items: flex-start; justify-content: center; padding: 40px 12px; overflow-y: auto; z-index: 10; }
+.modal-bg.open { display: flex; }
+.modal { background: #fff; border-radius: 10px; width: 100%; max-width: 680px; padding: 18px 20px; }
+.modal h3 { margin: 0 0 12px; font-size: 16px; }
+.form-row { margin-bottom: 10px; }
+.form-row label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } dl.kv { grid-template-columns: 1fr; } }
+.form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.err { color: var(--bad); font-size: 12px; min-height: 16px; }
+footer.credit { border-top: 1px solid var(--line); background: #fff; padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; }
+footer.credit img { height: 44px; width: auto; }
+footer.credit .txt { max-width: 560px; text-align: left; }
+.report { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 26px 30px; }
+.report h2 { font-size: 18px; margin: 0 0 4px; }
+.report h3 { margin: 20px 0 8px; font-size: 14px; }
+@media print {
+  header, nav, .no-print, footer.credit, .modal-bg { display: none !important; }
+  .panel-hide-print { display: none !important; }
+  body { background: #fff; }
+  main { padding: 0; max-width: none; }
+  .report { border: 0; padding: 0; }
+}
+
+#flash { display: none; position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #1c2630; color: #fff; padding: 10px 16px; border-radius: 8px; z-index: 20; max-width: 90%; }
 </style>
 </head>
 <body>
 <header>
   <div>
     <h1>Environmental Compliance Monitor, Zambia</h1>
-    <div class="sub">Mining effluent and tailings, operator and regulator views</div>
+    <div class="sub">Mining effluent and tailings. Prototype v0.2, demonstration data only</div>
   </div>
-  <div>
-    <span class="badge" id="source-badge">Data source: simulated</span>
+  <div class="hdr-right">
+    <label for="role">Viewing as</label>
+    <select id="role" aria-label="Role">
+      <option value="operator">Operator</option>
+      <option value="inspector">ZEMA inspector</option>
+      <option value="community">Community member</option>
+    </select>
+    <span id="op-wrap"><select id="op-select" aria-label="Operator"></select></span>
+    <button class="badge link" id="profile-btn" title="Your details"><span id="who"></span></button>
+    <button class="badge link" id="data-btn">Data and export</button>
     <span class="badge" id="clock"></span>
   </div>
 </header>
-<nav id="tabs">
-  <button data-tab="operator" class="active">Operator view</button>
-  <button data-tab="regulator">Regulator view</button>
-  <button data-tab="limits">Limit register</button>
-  <button data-tab="report">Compliance report</button>
-  <button data-tab="test">Test checklist</button>
-</nav>
+<nav id="tabs"></nav>
 <main>
-  <section class="panel active" id="panel-operator">
-    <div class="bar">
-      <label for="op-select">Operator</label>
-      <select id="op-select"></select>
-      <button class="btn alt" id="pause-btn">Pause feed</button>
-      <button class="btn alt" id="breach-btn">Simulate a breach</button>
-    </div>
-    <div class="kpis" id="op-kpis"></div>
-    <div class="grid" id="op-points"></div>
-    <div class="card" style="margin-top:16px">
-      <h2 id="chart-title">Select a parameter above</h2>
-      <canvas id="chart"></canvas>
-    </div>
-    <div class="card" style="margin-top:16px">
-      <h2>Exceedance events and corrective actions</h2>
-      <div id="op-events"></div>
-    </div>
-  </section>
-
-  <section class="panel" id="panel-regulator">
-    <div class="kpis" id="reg-kpis"></div>
-    <div class="two">
-      <div class="card">
-        <h2>Operators</h2>
-        <div id="reg-table"></div>
-      </div>
-      <div class="card">
-        <h2>Site map, Copperbelt and North-Western Province</h2>
-        <div id="reg-map"></div>
-      </div>
-    </div>
-    <div class="two" style="margin-top:16px">
-      <div class="card">
-        <h2>Exceedance feed, all operators</h2>
-        <div id="reg-events"></div>
-      </div>
-      <div class="card">
-        <h2>Inspection requests</h2>
-        <div id="reg-insp"></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="panel" id="panel-limits">
-    <div class="card">
-      <h2>Limit register</h2>
-      <p class="muted">The values below are demonstration defaults. Replace them with the limits in each operator licence conditions and the current ZEMA standards before any real use. Changes apply immediately to the live exceedance checks.</p>
-      <div id="limits-table"></div>
-    </div>
-  </section>
-
-  <section class="panel" id="panel-report">
-    <div class="bar no-print">
-      <label for="rep-select">Operator</label>
-      <select id="rep-select"></select>
-      <button class="btn" id="print-btn">Print or save as PDF</button>
-      <button class="btn alt" id="csv-btn">Download CSV</button>
-    </div>
-    <div class="report" id="report-body"></div>
-  </section>
-  <section class="panel" id="panel-test">
-    <div class="card">
-      <h2>Test checklist for two testers</h2>
-      <p class="muted">Allow about 20 minutes. One person plays the operator (Demo Mine C) and one plays the regulator. Each person opens this page on their own device. Readings are simulated and each device runs its own session, so sit together and compare screens.</p>
-      <h3>Operator tester</h3>
-      <ol>
-        <li>Open Operator view and choose Demo Mine C, Mufulira.</li>
-        <li>Click a few parameter rows and check that the chart and its dashed limit line change.</li>
-        <li>Press Simulate a breach and wait until a status label shows Exceeds limit.</li>
-        <li>In the events table press Acknowledge on the new event.</li>
-        <li>Press Log action, type a corrective action and press Save.</li>
-        <li>Wait up to one minute. Once the reading is back within its limit for 3 readings in a row, the event should change to Closed.</li>
-        <li>Press Pause feed, then Resume feed.</li>
-      </ol>
-      <h3>Regulator tester</h3>
-      <ol>
-        <li>Open Regulator view and note which operators show red, amber or green on the map.</li>
-        <li>Find the most recent event in the exceedance feed and read its peak and limit.</li>
-        <li>Press Request inspection for one operator, then open Operator view for that operator and check the inspection note.</li>
-        <li>Open Limit register, change the copper maximum to 0.5 and watch new exceedances appear.</li>
-        <li>Open Compliance report, choose an operator, press Print or save as PDF and Download CSV.</li>
-      </ol>
-      <h3>Feedback</h3>
-      <form id="fb">
-        <label>Your name and role<br><input type="text" id="fb0" size="40"></label>
-        <p><label>1. Was it clear which sites need attention, and why?<br><textarea id="fb1" rows="3" cols="80"></textarea></label></p>
-        <p><label>2. Did the acknowledge and corrective action steps match how your organisation works?<br><textarea id="fb2" rows="3" cols="80"></textarea></label></p>
-        <p><label>3. What is missing for a real inspection or monthly report?<br><textarea id="fb3" rows="3" cols="80"></textarea></label></p>
-        <p><label>4. What was confusing or hard to read?<br><textarea id="fb4" rows="3" cols="80"></textarea></label></p>
-        <p><label>5. Anything else?<br><textarea id="fb5" rows="3" cols="80"></textarea></label></p>
-        <button class="btn" type="submit">Save my answers</button>
-        <span class="muted" id="fb-msg">Saves a text file to your Downloads folder. Email it to the project lead.</span>
-      </form>
-    </div>
-  </section>
+  <div id="storage-note"></div>
+  <div id="main"></div>
 </main>
+<footer class="credit">
+  <img src="data:image/png;base64,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" alt="University of Zambia logo">
+  <img src="data:image/png;base64,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" alt="Verdaia Consulting Ltd logo">
+  <div class="txt">Developed by the University of Zambia, School of Engineering, Department of Civil and Environmental Engineering, in collaboration with Verdaia Consulting Ltd. Prototype for demonstration and discussion. Demonstration limits only: real use needs the licence conditions and current ZEMA standards.</div>
+</footer>
+<div class="modal-bg" id="modal-bg"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><h3 id="modal-title"></h3><div id="modal-body"></div></div></div>
+<div id="flash" role="status"></div>
 <script>
-/*
- Compliance engine for the Zambia environmental compliance monitoring prototype.
- Common reading format used by every data source adapter:
-   { op: 'a', point: 'out', param: 'cu', value: 0.42, t: 1732440000000, source: 'simulated' }
- Replace the simulator with a Kobo form pull, an MQTT subscriber or an open data fetch by
- calling engine.ingest(reading) for each reading, then engine.commit() once per batch.
-*/
-(function (root) {
-  'use strict';
+/* Reference data and demonstration records for prototype v0.2.
+   All operators, licences, coordinates, limits and records are fictional demonstration values. */
+'use strict';
+var DAY = 86400000;
+var CONFIG = {
+  version: '0.2',
+  storageKey: 'ecm-zambia-v02',
+  maxFileBytes: 2000000,
+  tickMs: 3000,
+  warnFactor: 1.5,
+  dueDays: { 'Early warning': 2, 'Limit breach': 7, 'Incident': 7 },
+  showRegulatorLogo: false
+};
 
-  var PARAMS = {
-    ph:   { label: 'pH',                    unit: '',     min: 6.0, max: 9.0,  dec: 2, base: 7.5,  sd: 0.12, span: 0.9 },
-    tss:  { label: 'Suspended solids',      unit: 'mg/L', min: null, max: 100,  dec: 0, base: 55,   sd: 6,    span: 40 },
-    cu:   { label: 'Copper',                unit: 'mg/L', min: null, max: 1.0,  dec: 2, base: 0.35, sd: 0.06, span: 0.5 },
-    so4:  { label: 'Sulphate',              unit: 'mg/L', min: null, max: 1000, dec: 0, base: 650,  sd: 50,   span: 400 },
-    turb: { label: 'Turbidity',             unit: 'NTU',  min: null, max: 50,   dec: 0, base: 22,   sd: 3,    span: 25 },
-    free: { label: 'Dam freeboard',         unit: 'm',    min: 1.0, max: null,  dec: 2, base: 2.0,  sd: 0.05, span: 0.6 }
+var OPERATORS = [
+  { id: 'a', name: 'Demo Mine A', company: 'Demo Copper Mines A Ltd', town: 'Chingola', x: 0.46, y: 0.52, stress: 0.15,
+    lat: -12.53, lon: 27.85, river: 'Kafue River catchment (demonstration)',
+    licence: { no: 'DEMO-LIC-A-001', type: 'Effluent discharge licence (demonstration)', issued: -700, expiry: 400,
+      conditions: ['Monitor pH, conductivity and turbidity continuously at the final effluent outlet', 'Submit a monthly monitoring report by the 10th of the following month', 'Sample heavy metals at the outlet and downstream point every 30 days', 'Report any spill or seepage within 24 hours'] } },
+  { id: 'b', name: 'Demo Mine B', company: 'Demo Copper Mines B Ltd', town: 'Kitwe', x: 0.66, y: 0.74, stress: 0.30,
+    lat: -12.80, lon: 28.21, river: 'Kafue River catchment (demonstration)',
+    licence: { no: 'DEMO-LIC-B-002', type: 'Effluent discharge licence (demonstration)', issued: -500, expiry: 220,
+      conditions: ['Monitor pH, conductivity and turbidity continuously at the final effluent outlet', 'Submit a monthly monitoring report by the 10th of the following month', 'Maintain tailings dam freeboard of at least 1.0 m', 'Report any spill or seepage within 24 hours'] } },
+  { id: 'c', name: 'Demo Mine C', company: 'Demo Cobalt and Copper C Ltd', town: 'Mufulira', x: 0.82, y: 0.38, stress: 0.60,
+    lat: -12.55, lon: 28.24, river: 'Kafue River catchment (demonstration)',
+    licence: { no: 'DEMO-LIC-C-003', type: 'Effluent discharge licence (demonstration)', issued: -1050, expiry: 45,
+      conditions: ['Monitor pH, conductivity and turbidity continuously at the final effluent outlet', 'Submit a quarterly monitoring report', 'Sample heavy metals at the outlet and downstream point every 30 days', 'Maintain tailings dam freeboard of at least 1.0 m'] } },
+  { id: 'd', name: 'Demo Mine D', company: 'Demo North-Western Copper D Ltd', town: 'Solwezi', x: 0.14, y: 0.24, stress: 0.05,
+    lat: -12.17, lon: 26.39, river: 'Solwezi River catchment (demonstration)',
+    licence: { no: 'DEMO-LIC-D-004', type: 'Effluent discharge licence (demonstration)', issued: -300, expiry: 760,
+      conditions: ['Monitor pH, conductivity and turbidity continuously at the final effluent outlet', 'Submit a monthly monitoring report by the 10th of the following month', 'Sample heavy metals at the outlet every 30 days'] } }
+];
+
+var POINTS = [
+  { id: 'dam', code: 'TSF-01', name: 'Tailings dam decant', type: 'Tailings dam', live: ['ph', 'free'], dLat: 0.004, dLon: -0.006 },
+  { id: 'out', code: 'FEO-01', name: 'Final effluent outlet', type: 'Discharge outlet', live: ['ph', 'ec', 'turb'], dLat: 0.000, dLon: 0.004, baseline: 600 },
+  { id: 'str', code: 'DSS-01', name: 'Downstream stream', type: 'Receiving stream', live: ['ph', 'ec', 'turb'], dLat: -0.009, dLon: 0.011, baseline: 300 }
+];
+
+/* kind: live = continuous probe reading, lab = laboratory result */
+var DEFAULT_PARAMS = [
+  { id: 'ph',   label: 'pH',                      unit: '',      min: 6.0,  max: 9.0,  dec: 2, kind: 'live', group: 'Physical' },
+  { id: 'ec',   label: 'Electrical conductivity', unit: 'µS/cm', min: null, max: 1500, dec: 0, kind: 'live', group: 'Physical' },
+  { id: 'turb', label: 'Turbidity',               unit: 'NTU',   min: null, max: 50,   dec: 0, kind: 'live', group: 'Physical' },
+  { id: 'free', label: 'Dam freeboard',           unit: 'm',     min: 1.0,  max: null, dec: 2, kind: 'live', group: 'Physical' },
+  { id: 'cu',   label: 'Copper',                  unit: 'mg/L',  min: null, max: 1.0,  dec: 3, kind: 'lab', group: 'Heavy metal' },
+  { id: 'co',   label: 'Cobalt',                  unit: 'mg/L',  min: null, max: 1.0,  dec: 3, kind: 'lab', group: 'Heavy metal' },
+  { id: 'mn',   label: 'Manganese',               unit: 'mg/L',  min: null, max: 1.0,  dec: 3, kind: 'lab', group: 'Heavy metal' },
+  { id: 'zn',   label: 'Zinc',                    unit: 'mg/L',  min: null, max: 5.0,  dec: 3, kind: 'lab', group: 'Heavy metal' },
+  { id: 'fe',   label: 'Iron',                    unit: 'mg/L',  min: null, max: 2.0,  dec: 3, kind: 'lab', group: 'Heavy metal' },
+  { id: 'pb',   label: 'Lead',                    unit: 'mg/L',  min: null, max: 0.5,  dec: 3, kind: 'lab', group: 'Heavy metal' },
+  { id: 'cd',   label: 'Cadmium',                 unit: 'mg/L',  min: null, max: 0.05, dec: 3, kind: 'lab', group: 'Heavy metal' },
+  { id: 'as',   label: 'Arsenic',                 unit: 'mg/L',  min: null, max: 0.05, dec: 3, kind: 'lab', group: 'Heavy metal' },
+  { id: 'so4',  label: 'Sulphate',                unit: 'mg/L',  min: null, max: 1000, dec: 0, kind: 'lab', group: 'Other' },
+  { id: 'tss',  label: 'Total suspended solids',  unit: 'mg/L',  min: null, max: 100,  dec: 0, kind: 'lab', group: 'Other' }
+];
+
+/* Simulator settings for live parameters */
+var SIM = {
+  ph:   { base: 7.5, sd: 0.10, span: 0.9 },
+  ec:   { base: null, sd: 25, span: 600 },
+  turb: { base: 18, sd: 3, span: 30 },
+  free: { base: 2.0, sd: 0.04, span: 0.6 }
+};
+
+var DOC_TYPES = {
+  operator: ['Monthly monitoring report', 'Quarterly monitoring report', 'Annual environmental report', 'Incident investigation report', 'Laboratory certificate', 'Other'],
+  inspector: ['Inspection report', 'Audit report', 'Compliance letter', 'Other']
+};
+var INCIDENT_TYPES = ['Effluent spill', 'Tailings seepage', 'Tailings dam overtopping', 'Pipeline burst', 'Probe or equipment failure', 'Other'];
+var PARAM_GROUPS = ['Heavy metal', 'Physical', 'Nutrient', 'Organic', 'Microbiological', 'Other'];
+
+function buildSeed(now) {
+  var d = function (days, h) { return now + days * DAY + (h || 0) * 3600000; };
+  var s = {
+    v: 2, seq: 1, created: now,
+    profiles: {},
+    params: JSON.parse(JSON.stringify(DEFAULT_PARAMS)),
+    results: [], items: [], docs: [], inspections: [], incidents: [], complaints: [], log: [], schedule: []
   };
-
-  var OPERATORS = [
-    { id: 'a', name: 'Demo Mine A', town: 'Chingola', x: 0.46, y: 0.52, stress: 0.15 },
-    { id: 'b', name: 'Demo Mine B', town: 'Kitwe',    x: 0.66, y: 0.74, stress: 0.30 },
-    { id: 'c', name: 'Demo Mine C', town: 'Mufulira', x: 0.82, y: 0.38, stress: 0.60 },
-    { id: 'd', name: 'Demo Mine D', town: 'Solwezi',  x: 0.14, y: 0.24, stress: 0.05 }
-  ];
-
-  var POINTS = [
-    { id: 'dam', name: 'Tailings dam decant',   params: ['ph', 'tss', 'cu', 'so4', 'free'] },
-    { id: 'out', name: 'Final effluent outlet', params: ['ph', 'tss', 'cu', 'so4'] },
-    { id: 'str', name: 'Downstream stream',     params: ['ph', 'cu', 'turb'] }
-  ];
-
-  var HISTORY = 90;
-  var SCORE_WINDOW = 300;
-
-  function key(op, point, param) { return op + '|' + point + '|' + param; }
-
-  function mulberry32(a) {
-    return function () {
-      a |= 0; a = a + 0x6D2B79F5 | 0;
-      var t = Math.imul(a ^ a >>> 15, 1 | a);
-      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
-  }
-
-  function within(param, v) {
-    var p = PARAMS[param];
-    if (p.min !== null && v < p.min) { return false; }
-    if (p.max !== null && v > p.max) { return false; }
-    return true;
-  }
-
-  function deviation(param, v) {
-    var p = PARAMS[param];
-    if (p.max !== null && v > p.max) { return v - p.max; }
-    if (p.min !== null && v < p.min) { return p.min - v; }
-    return 0;
-  }
-
-  function limitText(param) {
-    var p = PARAMS[param];
-    var u = p.unit ? ' ' + p.unit : '';
-    if (p.min !== null && p.max !== null) { return p.min.toFixed(p.dec) + ' to ' + p.max.toFixed(p.dec) + u; }
-    if (p.max !== null) { return 'max ' + p.max.toFixed(p.dec) + u; }
-    return 'min ' + p.min.toFixed(p.dec) + u;
-  }
-
-  function Engine(seed) {
-    this.rand = mulberry32(seed || 1);
-    this.series = {};
-    this.events = [];
-    this.openByKey = {};
-    this.inspections = [];
-    this.windows = {};
-    this.listeners = [];
-    this.nextId = 1;
-    this.startedAt = Date.now();
-    var self = this;
-    OPERATORS.forEach(function (op) {
-      self.windows[op.id] = [];
-      POINTS.forEach(function (pt) {
-        pt.params.forEach(function (pm) {
-          var p = PARAMS[pm];
-          var edge = p.max !== null ? p.max : p.min;
-          var base = p.base + op.stress * 0.6 * (edge - p.base);
-          self.series[key(op.id, pt.id, pm)] = {
-            key: key(op.id, pt.id, pm), op: op.id, point: pt.id, param: pm,
-            base: base, sd: p.sd * (1 + op.stress), spike: null,
-            values: [base], times: [Date.now()], inLimit: true,
-            n: 0, sum: 0, min: Infinity, max: -Infinity, exceed: 0
-          };
-        });
-      });
+  OPERATORS.forEach(function (op, i) {
+    ['out', 'str', 'dam'].forEach(function (pt, k) {
+      if (pt === 'dam' && op.id === 'd') { return; }
+      s.schedule.push({ op: op.id, point: pt, freq: pt === 'dam' ? 90 : 30, last: d(-(8 + ((i * 11 + k * 17) % 40))) });
     });
-  }
+  });
+  s.sampleIds = {};
+  return s;
+}
 
-  Engine.prototype.gauss = function () {
-    var u = 1 - this.rand(), v = this.rand();
-    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-  };
-
-  Engine.prototype.on = function (fn) { this.listeners.push(fn); };
-  Engine.prototype.commit = function () { this.listeners.forEach(function (fn) { fn(); }); };
-
-  Engine.prototype.startSpike = function (s, dir) {
-    var p = PARAMS[s.param];
-    var hi = dir ? dir === 'hi' : (p.max !== null && (p.min === null || this.rand() < 0.5));
-    s.spike = { left: 6 + Math.floor(this.rand() * 6), target: hi ? p.max + p.span : p.min - p.span };
-  };
-
-  Engine.prototype.nextValue = function (s, op) {
-    var p = PARAMS[s.param];
-    var v = s.values[s.values.length - 1];
-    if (!s.spike && this.rand() < 0.004 * (0.4 + op.stress * 2)) { this.startSpike(s); }
-    if (s.spike) {
-      v += (s.spike.target - v) * 0.45 + this.gauss() * s.sd * 0.5;
-      s.spike.left -= 1;
-      if (s.spike.left <= 0) { s.spike = null; }
-    } else {
-      v += (s.base - v) * 0.3 + this.gauss() * s.sd;
-    }
-    if (s.param === 'ph') { v = Math.min(14, Math.max(0, v)); }
-    else if (s.param === 'free') { v = Math.max(0.2, v); }
-    else { v = Math.max(0, v); }
-    return Math.round(v * 1000) / 1000;
-  };
-
-  Engine.prototype.tick = function (t) {
-    var self = this;
-    OPERATORS.forEach(function (op) {
-      POINTS.forEach(function (pt) {
-        pt.params.forEach(function (pm) {
-          var s = self.series[key(op.id, pt.id, pm)];
-          self.ingest({ op: op.id, point: pt.id, param: pm, value: self.nextValue(s, op), t: t, source: 'simulated' });
-        });
-      });
-    });
-    this.commit();
-  };
-
-  Engine.prototype.forceBreach = function (opId) {
-    var list = [];
-    for (var k in this.series) {
-      if (this.series[k].op === opId && this.series[k].point !== 'str') { list.push(this.series[k]); }
-    }
-    var s = list[Math.floor(this.rand() * list.length)];
-    this.startSpike(s);
-    return s;
-  };
-
-  Engine.prototype.ingest = function (r) {
-    var s = this.series[key(r.op, r.point, r.param)];
-    if (!s) { return; }
-    s.values.push(r.value); s.times.push(r.t);
-    if (s.values.length > HISTORY) { s.values.shift(); s.times.shift(); }
-    var ok = within(r.param, r.value);
-    s.inLimit = ok;
-    s.n += 1; s.sum += r.value;
-    if (r.value < s.min) { s.min = r.value; }
-    if (r.value > s.max) { s.max = r.value; }
-    if (!ok) { s.exceed += 1; }
-    var w = this.windows[r.op];
-    w.push(ok); if (w.length > SCORE_WINDOW) { w.shift(); }
-    this.trackEvent(s, r, ok);
-  };
-
-  Engine.prototype.trackEvent = function (s, r, ok) {
-    var ev = this.openByKey[s.key];
-    if (!ok) {
-      if (!ev) {
-        ev = {
-          id: this.nextId++, key: s.key, op: s.op, point: s.point, param: s.param,
-          t: r.t, value: r.value, status: 'Open', active: true, inCount: 0, readings: 1,
-          ackAt: null, action: null, actionAt: null, closedAt: null
-        };
-        this.events.unshift(ev);
-        this.openByKey[s.key] = ev;
-      } else {
-        ev.active = true; ev.inCount = 0; ev.readings += 1;
-        if (deviation(s.param, r.value) > deviation(s.param, ev.value)) { ev.value = r.value; }
-      }
-    } else if (ev) {
-      ev.active = false; ev.inCount += 1;
-      this.tryClose(ev, r.t);
-    }
-  };
-
-  Engine.prototype.tryClose = function (ev, t) {
-    if (ev.status === 'Action logged' && !ev.active && ev.inCount >= 3) {
-      ev.status = 'Closed'; ev.closedAt = t;
-      delete this.openByKey[ev.key];
-    }
-  };
-
-  Engine.prototype.findEvent = function (id) {
-    for (var i = 0; i < this.events.length; i++) { if (this.events[i].id === id) { return this.events[i]; } }
-    return null;
-  };
-
-  Engine.prototype.acknowledge = function (id) {
-    var ev = this.findEvent(id);
-    if (ev && ev.status === 'Open') { ev.status = 'Acknowledged'; ev.ackAt = Date.now(); }
-    this.commit();
-  };
-
-  Engine.prototype.logAction = function (id, text) {
-    var ev = this.findEvent(id);
-    if (ev && (ev.status === 'Open' || ev.status === 'Acknowledged') && text) {
-      if (!ev.ackAt) { ev.ackAt = Date.now(); }
-      ev.status = 'Action logged'; ev.action = text; ev.actionAt = Date.now();
-      this.tryClose(ev, Date.now());
-    }
-    this.commit();
-  };
-
-  Engine.prototype.requestInspection = function (opId, reason) {
-    this.inspections.unshift({ id: this.nextId++, op: opId, reason: reason, t: Date.now() });
-    this.commit();
-  };
-
-  Engine.prototype.score = function (opId) {
-    var w = this.windows[opId];
-    if (!w.length) { return 100; }
-    var ok = 0;
-    for (var i = 0; i < w.length; i++) { if (w[i]) { ok += 1; } }
-    return 100 * ok / w.length;
-  };
-
-  Engine.prototype.eventsFor = function (opId) {
-    return this.events.filter(function (e) { return e.op === opId; });
-  };
-
-  Engine.prototype.counts = function (opId) {
-    var list = opId ? this.eventsFor(opId) : this.events;
-    var c = { open: 0, ack: 0, action: 0, closed: 0, unresolved: 0 };
-    list.forEach(function (e) {
-      if (e.status === 'Open') { c.open += 1; }
-      else if (e.status === 'Acknowledged') { c.ack += 1; }
-      else if (e.status === 'Action logged') { c.action += 1; }
-      else { c.closed += 1; }
-    });
-    c.unresolved = c.open + c.ack + c.action;
-    return c;
-  };
-
-  Engine.prototype.report = function (opId) {
-    var rows = [], self = this;
-    POINTS.forEach(function (pt) {
-      pt.params.forEach(function (pm) {
-        var s = self.series[key(opId, pt.id, pm)];
-        rows.push({
-          point: pt.name, param: PARAMS[pm].label, unit: PARAMS[pm].unit, limit: limitText(pm),
-          n: s.n, min: s.n ? s.min : null, mean: s.n ? s.sum / s.n : null, max: s.n ? s.max : null,
-          exceed: s.exceed, dec: PARAMS[pm].dec
-        });
-      });
-    });
-    return rows;
-  };
-
-  var api = {
-    Engine: Engine, PARAMS: PARAMS, OPERATORS: OPERATORS, POINTS: POINTS, HISTORY: HISTORY,
-    key: key, within: within, limitText: limitText
-  };
-  if (typeof module !== 'undefined' && module.exports) { module.exports = api; } else { root.ECMEngine = api; }
-})(this);
+/* Demonstration records added after the store is created, so they get references through the normal functions */
+function seedRecords(api, now) {
+  var d = function (days, h) { return now + days * DAY + (h || 0) * 3600000; };
+  var opUser = { role: 'operator', name: 'Demo operator officer', position: 'Environmental Officer' };
+  var insUser = { role: 'inspector', name: 'Demo inspector', position: 'Inspector', staff: 'DEMO-001' };
+  api.addResult({ op: 'c', point: 'out', lab: 'Demo Analytical Laboratory', accr: 'Accredited', sampleId: 'C-FEO-1021', sampled: d(-16), analysed: d(-12), method: 'ICP-OES (demonstration)', values: { cu: 1.42, co: 0.61, mn: 0.38, zn: 0.9, fe: 1.1, so4: 820, tss: 64 } }, opUser, d(-11), true);
+  api.addResult({ op: 'a', point: 'str', lab: 'Demo Analytical Laboratory', accr: 'Accredited', sampleId: 'A-DSS-0987', sampled: d(-20), analysed: d(-17), method: 'ICP-OES (demonstration)', values: { cu: 0.21, co: 0.05, mn: 0.12, zn: 0.3, fe: 0.6, so4: 310, tss: 22 } }, opUser, d(-16), true);
+  api.addDoc({ op: 'a', role: 'operator', title: 'Monthly monitoring report, October 2026', type: 'Monthly monitoring report', period: 'October 2026', notes: 'All parameters within limits except two short turbidity events.' }, opUser, d(-15), true);
+  api.addDoc({ op: 'c', role: 'operator', title: 'Quarterly monitoring report, July to September 2026', type: 'Quarterly monitoring report', period: 'July to September 2026', notes: '' }, opUser, d(-30), true);
+  api.addInspection({ op: 'c', date: d(-10), findings: 'Seepage observed at the toe of the tailings dam on the eastern wall. Outlet probe housing damaged. Copper above the licence limit in the latest laboratory result.', suggestions: ['Repair the outlet probe housing and recalibrate the probes', 'Install a seepage collection sump at the eastern toe and report the design'], dueDays: 7 }, insUser, d(-10), true);
+  api.addNotice({ op: 'c', type: 'Compliance notice', text: 'Submit a corrective action plan for copper exceedances at the final effluent outlet.', deadline: d(-2) }, insUser, d(-9), true);
+  api.addIncident({ op: 'b', point: 'dam', kind: 'Tailings seepage', occurred: d(-3, -5), desc: 'Minor seepage found at the north wall drain during the morning inspection.', immediate: 'Seepage contained with sandbags and pumped back to the dam.' }, opUser, d(-3), true);
+  api.addComplaint({ name: 'Community member (demonstration)', contact: '', op: 'c', location: 'Footbridge downstream of Demo Mine C', desc: 'Stream water turned blue-green and cloudy after rain yesterday.' }, d(-1), true);
+}
 
 </script>
 <script>
+/* Environmental Compliance Monitor, Zambia. Prototype v0.2 application. */
 (function () {
-  'use strict';
-  var E = window.ECMEngine;
-  var engine = new E.Engine(Date.now() % 100000);
-  var ui = { tab: 'operator', op: 'a', rep: 'a', sel: 'a|out|cu', actionFor: null, paused: false };
-  var FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+'use strict';
 
-  function $(id) { return document.getElementById(id); }
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function opName(id) { return E.OPERATORS.filter(function (o) { return o.id === id; })[0].name; }
-  function ptName(id) { return E.POINTS.filter(function (o) { return o.id === id; })[0].name; }
-  function fmt(param, v) { var p = E.PARAMS[param]; return v.toFixed(p.dec) + (p.unit ? ' ' + p.unit : ''); }
-  function clock(t) { return new Date(t).toLocaleTimeString('en-GB'); }
-  function pill(text, cls) { return '<span class="pill ' + cls + '">' + esc(text) + '</span>'; }
-  function statusPill(s) {
-    return pill(s, s === 'Open' ? 'bad' : s === 'Closed' ? 'ok' : s === 'Acknowledged' ? 'warn' : 'neutral');
-  }
-  function busy(el) { return el.contains(document.activeElement) && document.activeElement.tagName === 'INPUT'; }
+/* ---------------- helpers ---------------- */
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function pad(n) { return (n < 10 ? '0' : '') + n; }
+function fdate(t) { if (!t) { return ''; } var d = new Date(t); return d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear(); }
+function ftime(t) { if (!t) { return ''; } var d = new Date(t); return fdate(t) + ', ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function fclock(t) { var d = new Date(t); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
+function isoDate(t) { var d = new Date(t); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function isoLocal(t) { var d = new Date(t); return isoDate(t) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function parseDate(v) { if (!v) { return null; } var t = Date.parse(v.length === 10 ? v + 'T12:00' : v); return isNaN(t) ? null : t; }
+function opById(id) { for (var i = 0; i < OPERATORS.length; i++) { if (OPERATORS[i].id === id) { return OPERATORS[i]; } } return null; }
+function opName(id) { var o = opById(id); return o ? o.name : 'Not linked to an operator'; }
+function ptById(id) { for (var i = 0; i < POINTS.length; i++) { if (POINTS[i].id === id) { return POINTS[i]; } } return null; }
+function ptName(id) { var p = ptById(id); return p ? p.name : ''; }
+function pill(t, c) { return '<span class="pill ' + c + '">' + esc(t) + '</span>'; }
+function sampleTag(r) { return r && r.sample ? ' ' + pill('Sample record', 'sample') : ''; }
+function now() { return Date.now(); }
 
-  /* ---------- operator view ---------- */
-  function renderOperator() {
-    var c = engine.counts(ui.op);
-    var score = engine.score(ui.op);
-    $('op-kpis').innerHTML =
-      kpi(score.toFixed(1) + '%', 'Readings within limits, recent window') +
-      kpi(c.open, 'Open exceedances awaiting acknowledgement') +
-      kpi(c.ack + c.action, 'Acknowledged or action logged') +
-      kpi(c.closed, 'Closed this session');
+/* ---------------- store ---------------- */
+var S, storageOk = true, storageMsg = '';
+function save() {
+  try { localStorage.setItem(CONFIG.storageKey, JSON.stringify(S)); storageOk = true; }
+  catch (e) { storageOk = false; storageMsg = 'Browser storage is full or blocked. New entries are kept only until the page is closed. Remove large files or use Reset demo.'; }
+}
+function load() {
+  try { var raw = localStorage.getItem(CONFIG.storageKey); if (raw) { S = JSON.parse(raw); if (S && S.v === 2) { return false; } } } catch (e) { /* ignore */ }
+  S = buildSeed(now());
+  return true;
+}
+function nextRef(prefix) { S.seq += 1; return prefix + '-' + String(S.seq).padStart(4, '0'); }
+function params(kind) { return S.params.filter(function (p) { return !kind || p.kind === kind; }); }
+function param(id) { for (var i = 0; i < S.params.length; i++) { if (S.params[i].id === id) { return S.params[i]; } } return null; }
+function unitOf(p) { return p.unit ? ' ' + p.unit : ''; }
+function fmtVal(p, v) { return v == null || v === '' ? '' : Number(v).toFixed(p.dec) + unitOf(p); }
+function within(p, v) { if (p.min !== null && v < p.min) { return false; } if (p.max !== null && v > p.max) { return false; } return true; }
+function limitText(p) {
+  var u = unitOf(p);
+  if (p.min !== null && p.max !== null) { return p.min + ' to ' + p.max + u; }
+  if (p.max !== null) { return 'max ' + p.max + u; }
+  if (p.min !== null) { return 'min ' + p.min + u; }
+  return 'no limit set';
+}
+function who(u) { return u.name + (u.position ? ', ' + u.position : '') + (u.staff ? ' (' + u.staff + ')' : ''); }
 
-    var html = '';
-    E.POINTS.forEach(function (pt) {
-      html += '<div class="card"><h3>' + esc(pt.name) + '</h3><table><tr><th>Parameter</th><th>Reading</th><th>Limit</th><th>Status</th></tr>';
-      pt.params.forEach(function (pm) {
-        var s = engine.series[E.key(ui.op, pt.id, pm)];
-        var v = s.values[s.values.length - 1];
-        var k = s.key;
-        html += '<tr class="pick' + (ui.sel === k ? ' sel' : '') + '" data-series="' + k + '"><td>' + esc(E.PARAMS[pm].label) + '</td><td class="nw">' +
-          fmt(pm, v) + '</td><td class="nw">' + esc(E.limitText(pm)) + '</td><td>' +
-          (s.inLimit ? pill('Within limit', 'ok') : pill('Exceeds limit', 'bad')) + '</td></tr>';
-      });
-      html += '</table></div>';
-    });
-    $('op-points').innerHTML = html;
+function logAct(u, op, text, t) {
+  S.log.unshift({ t: t || now(), role: u.role, name: who(u), op: op || '', text: text });
+  if (S.log.length > 800) { S.log.length = 800; }
+}
 
-    var s = ui.sel && engine.series[ui.sel];
-    if (s) {
-      $('chart-title').textContent = opName(s.op) + ', ' + ptName(s.point) + ', ' + E.PARAMS[s.param].label + (E.PARAMS[s.param].unit ? ' (' + E.PARAMS[s.param].unit + ')' : '');
-      drawChart($('chart'), s);
-    }
-
-    var box = $('op-events');
-    if (!busy(box)) { box.innerHTML = eventsTable(engine.eventsFor(ui.op), true); focusAction(); }
-
-    var notes = engine.inspections.filter(function (i) { return i.op === ui.op; });
-    if (notes.length) {
-      $('op-kpis').insertAdjacentHTML('afterend', '<div class="card" id="insp-note" style="margin-bottom:16px"><h3>Inspection requested by the regulator</h3>' +
-        notes.slice(0, 3).map(function (n) { return '<div>' + clock(n.t) + ', ' + esc(n.reason) + '</div>'; }).join('') + '</div>');
-      var all = document.querySelectorAll('#insp-note');
-      for (var i = 0; i < all.length - 1; i++) { all[i].remove(); }
-    } else if ($('insp-note')) { $('insp-note').remove(); }
-  }
-
-  function kpi(v, l) { return '<div class="kpi"><div class="v">' + v + '</div><div class="l">' + esc(l) + '</div></div>'; }
-
-  function eventsTable(list, withActions) {
-    if (!list.length) { return '<p class="muted">No exceedances recorded yet. Use Simulate a breach to test the workflow.</p>'; }
-    var h = '<table><tr><th>Time</th>' + (withActions ? '' : '<th>Operator</th>') + '<th>Point and parameter</th><th>Peak</th><th>Limit</th><th>Status</th>' + (withActions ? '<th>Corrective action</th>' : '') + '</tr>';
-    list.slice(0, 30).forEach(function (e) {
-      h += '<tr><td>' + clock(e.t) + '</td>' + (withActions ? '' : '<td>' + esc(opName(e.op)) + '</td>') +
-        '<td>' + esc(ptName(e.point)) + ', ' + esc(E.PARAMS[e.param].label) + '</td><td>' + fmt(e.param, e.value) + '</td><td>' + esc(E.limitText(e.param)) + '</td><td>' + statusPill(e.status) + '</td>';
-      if (withActions) {
-        h += '<td>';
-        if (e.status === 'Open') { h += '<button class="btn small alt" data-ack="' + e.id + '">Acknowledge</button> '; }
-        if (e.status === 'Open' || e.status === 'Acknowledged') {
-          if (ui.actionFor === e.id) {
-            h += '<input type="text" id="action-input" placeholder="Describe the action taken" size="28"> <button class="btn small" data-save="' + e.id + '">Save</button>';
-          } else { h += '<button class="btn small" data-act="' + e.id + '">Log action</button>'; }
-        }
-        if (e.action) { h += '<div>' + esc(e.action) + '</div>'; }
-        h += '</td>';
-      }
-      h += '</tr>';
-    });
-    return h + '</table>';
-  }
-
-  function focusAction() { var i = $('action-input'); if (i && document.activeElement !== i) { i.focus(); } }
-
-  function drawChart(canvas, s) {
-    var dpr = window.devicePixelRatio || 1;
-    var w = canvas.clientWidth, h = canvas.clientHeight;
-    if (!w || !h) { return; }
-    canvas.width = w * dpr; canvas.height = h * dpr;
-    var c = canvas.getContext('2d');
-    c.scale(dpr, dpr); c.clearRect(0, 0, w, h);
-    var p = E.PARAMS[s.param], vals = s.values;
-    if (vals.length < 2) { return; }
-    var padL = 56, padR = 14, padT = 12, padB = 26;
-    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
-    if (p.min !== null) { lo = Math.min(lo, p.min); }
-    if (p.max !== null) { hi = Math.max(hi, p.max); }
-    var span = (hi - lo) || 1; lo -= span * 0.12; hi += span * 0.12;
-    var X = function (i) { return padL + (w - padL - padR) * i / (vals.length - 1); };
-    var Y = function (v) { return padT + (h - padT - padB) * (1 - (v - lo) / (hi - lo)); };
-    c.font = '12px ' + FONT; c.textBaseline = 'middle';
-    c.strokeStyle = '#e3e6ea'; c.fillStyle = '#4a5560'; c.lineWidth = 1; c.textAlign = 'right';
-    for (var g = 0; g <= 4; g++) {
-      var gv = lo + (hi - lo) * g / 4, gy = Y(gv);
-      c.beginPath(); c.moveTo(padL, gy); c.lineTo(w - padR, gy); c.stroke();
-      c.fillText(gv.toFixed(p.dec), padL - 8, gy);
-    }
-    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
-    c.fillText(clock(s.times[0]), padL, h - 6);
-    c.textAlign = 'right'; c.fillText(clock(s.times[s.times.length - 1]), w - padR, h - 6);
-    c.strokeStyle = '#b3261e'; c.setLineDash([6, 4]); c.lineWidth = 1.5;
-    [p.min, p.max].forEach(function (lim) {
-      if (lim === null) { return; }
-      c.beginPath(); c.moveTo(padL, Y(lim)); c.lineTo(w - padR, Y(lim)); c.stroke();
-    });
-    c.setLineDash([]); c.strokeStyle = '#1f5f8b'; c.lineWidth = 2; c.beginPath();
-    vals.forEach(function (v, i) { if (i === 0) { c.moveTo(X(i), Y(v)); } else { c.lineTo(X(i), Y(v)); } });
-    c.stroke();
-    c.fillStyle = '#b3261e'; c.textAlign = 'left'; c.textBaseline = 'bottom';
-    if (p.max !== null) { c.fillText('Limit ' + p.max.toFixed(p.dec), padL + 6, Y(p.max) - 3); }
-    if (p.min !== null) { c.textBaseline = 'top'; c.fillText('Limit ' + p.min.toFixed(p.dec), padL + 6, Y(p.min) + 3); }
-  }
-
-  /* ---------- regulator view ---------- */
-  function renderRegulator() {
-    var all = engine.counts();
-    var avg = 0;
-    E.OPERATORS.forEach(function (o) { avg += engine.score(o.id); });
-    avg /= E.OPERATORS.length;
-    $('reg-kpis').innerHTML = kpi(E.OPERATORS.length, 'Operators monitored') + kpi(avg.toFixed(1) + '%', 'Average readings within limits') +
-      kpi(all.open, 'Open exceedances not yet acknowledged') + kpi(all.unresolved, 'Unresolved exceedances in total');
-
-    var t = '<table><tr><th>Operator</th><th>Town</th><th>Within limits</th><th>Open</th><th>Unresolved</th><th>Status</th><th></th></tr>';
-    E.OPERATORS.forEach(function (o) {
-      var c = engine.counts(o.id), sc = engine.score(o.id);
-      t += '<tr><td>' + esc(o.name) + '</td><td>' + esc(o.town) + '</td><td>' + sc.toFixed(1) + '%</td><td>' + c.open + '</td><td>' + c.unresolved + '</td><td>' + opStatus(c) + '</td>' +
-        '<td><button class="btn small alt" data-insp="' + o.id + '">Request inspection</button></td></tr>';
-    });
-    $('reg-table').innerHTML = t + '</table>';
-
-    var svg = '<svg viewBox="0 0 400 270" width="100%" role="img" aria-label="Schematic site map"><rect x="1" y="1" width="398" height="268" rx="8" fill="#f1f5f9" stroke="#dde2e7"/>';
-    E.OPERATORS.forEach(function (o) {
-      var c = engine.counts(o.id), col = c.open ? '#b3261e' : c.unresolved ? '#a15c00' : '#1e7a46';
-      var x = 30 + o.x * 340, y = 30 + o.y * 200;
-      svg += '<circle cx="' + x + '" cy="' + y + '" r="9" fill="' + col + '"/><text x="' + x + '" y="' + (y + 24) + '" text-anchor="middle" font-family="' + FONT + '" font-size="12" fill="#1c2630">' + esc(o.town) + '</text>';
-    });
-    svg += '<text x="12" y="260" font-family="' + FONT + '" font-size="11" fill="#5a6672">Schematic, not to scale. Green clear, amber unresolved, red open.</text></svg>';
-    $('reg-map').innerHTML = svg;
-
-    $('reg-events').innerHTML = eventsTable(engine.events, false);
-    $('reg-insp').innerHTML = engine.inspections.length ?
-      '<table><tr><th>Time</th><th>Operator</th><th>Reason</th></tr>' + engine.inspections.slice(0, 10).map(function (i) {
-        return '<tr><td>' + clock(i.t) + '</td><td>' + esc(opName(i.op)) + '</td><td>' + esc(i.reason) + '</td></tr>';
-      }).join('') + '</table>' : '<p class="muted">No inspection requests yet.</p>';
-  }
-
-  function opStatus(c) {
-    if (c.open) { return pill('Open exceedance', 'bad'); }
-    if (c.unresolved) { return pill('Action in progress', 'warn'); }
-    return pill('Compliant', 'ok');
-  }
-
-  /* ---------- limit register ---------- */
-  function renderLimits() {
-    var t = '<table><tr><th>Parameter</th><th>Unit</th><th>Minimum</th><th>Maximum</th></tr>';
-    Object.keys(E.PARAMS).forEach(function (k) {
-      var p = E.PARAMS[k];
-      t += '<tr><td>' + esc(p.label) + '</td><td>' + esc(p.unit || 'none') + '</td><td>' + limitInput(k, 'min', p.min) + '</td><td>' + limitInput(k, 'max', p.max) + '</td></tr>';
-    });
-    $('limits-table').innerHTML = t + '</table>';
-  }
-  function limitInput(k, side, v) {
-    return v === null ? '<span class="muted">not applicable</span>' :
-      '<input type="number" step="any" data-limit="' + k + ':' + side + '" value="' + v + '" aria-label="' + k + ' ' + side + '">';
-  }
-
-  /* ---------- report ---------- */
-  function renderReport() {
-    var o = E.OPERATORS.filter(function (x) { return x.id === ui.rep; })[0];
-    var rows = engine.report(ui.rep), c = engine.counts(ui.rep);
-    var h = '<h2>Environmental compliance report</h2><div class="muted">' + esc(o.name) + ', ' + esc(o.town) + '</div>' +
-      '<div class="muted">Reporting period: simulated session from ' + new Date(engine.startedAt).toLocaleString('en-GB') + ' to ' + new Date().toLocaleString('en-GB') + '</div>' +
-      '<div class="muted">Data source: simulated readings, for demonstration only</div>' +
-      '<h3>Summary</h3><p>Readings within limits in the recent window: ' + engine.score(ui.rep).toFixed(1) + '%. Exceedances recorded: ' + (c.unresolved + c.closed) +
-      ', of which ' + c.closed + ' closed and ' + c.unresolved + ' unresolved.</p><h3>Monitoring results</h3>' +
-      '<table><tr><th>Monitoring point</th><th>Parameter</th><th>Limit</th><th>Readings</th><th>Minimum</th><th>Mean</th><th>Maximum</th><th>Exceedances</th></tr>';
-    rows.forEach(function (r) {
-      h += '<tr><td>' + esc(r.point) + '</td><td>' + esc(r.param) + '</td><td>' + esc(r.limit) + '</td><td>' + r.n + '</td><td>' + num(r.min, r.dec) + '</td><td>' + num(r.mean, r.dec) + '</td><td>' + num(r.max, r.dec) + '</td><td>' + r.exceed + '</td></tr>';
-    });
-    h += '</table><h3>Exceedance events and corrective actions</h3>' + eventsTable(engine.eventsFor(ui.rep), true).replace(/<button[^>]*>[^<]*<\/button>/g, '').replace(/<input[^>]*>/g, '');
-    $('report-body').innerHTML = h;
-  }
-  function num(v, d) { return v === null ? 'none' : v.toFixed(d); }
-
-  function csv() {
-    var rows = engine.report(ui.rep);
-    var out = ['Monitoring point,Parameter,Unit,Limit,Readings,Minimum,Mean,Maximum,Exceedances'];
-    rows.forEach(function (r) {
-      out.push([r.point, r.param, r.unit, r.limit, r.n, num(r.min, r.dec), num(r.mean, r.dec), num(r.max, r.dec), r.exceed].map(function (x) { return '"' + String(x).replace(/"/g, '""') + '"'; }).join(','));
-    });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([out.join('\n')], { type: 'text/csv' }));
-    a.download = 'compliance-report-' + ui.rep + '.csv';
-    document.body.appendChild(a); a.click(); a.remove();
-  }
-
-  /* ---------- wiring ---------- */
-  function render() {
-    $('clock').textContent = new Date().toLocaleTimeString('en-GB');
-    if (ui.tab === 'operator') { renderOperator(); }
-    else if (ui.tab === 'regulator') { renderRegulator(); }
-    else if (ui.tab === 'report') { renderReport(); }
-  }
-
-  function fillSelect(el, val) {
-    el.innerHTML = E.OPERATORS.map(function (o) { return '<option value="' + o.id + '">' + esc(o.name) + ', ' + esc(o.town) + '</option>'; }).join('');
-    el.value = val;
-  }
-  fillSelect($('op-select'), ui.op); fillSelect($('rep-select'), ui.rep);
-  $('op-select').onchange = function () { ui.op = this.value; ui.sel = this.value + '|out|cu'; render(); };
-  $('rep-select').onchange = function () { ui.rep = this.value; render(); };
-
-  $('tabs').onclick = function (e) {
-    var t = e.target.getAttribute('data-tab'); if (!t) { return; }
-    ui.tab = t;
-    Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.classList.toggle('active', b === e.target); });
-    Array.prototype.forEach.call(document.querySelectorAll('.panel'), function (p) { p.classList.toggle('active', p.id === 'panel-' + t); });
-    if (t === 'limits') { renderLimits(); }
-    render();
+/* ---------------- action items ---------------- */
+function addItem(o, u, t) {
+  var it = {
+    id: nextRef('ACT'), op: o.op, origin: o.origin, level: o.level, point: o.point || '', param: o.param || '', value: o.value == null ? null : o.value,
+    text: o.text, link: o.link || '', t: t, due: o.due, status: 'Open', ackAt: null, ackBy: '', action: '', actionAt: null, actionBy: '',
+    closedAt: null, closedBy: '', active: !!o.active, inCount: 0, by: u ? who(u) : 'System', sample: !!o.sample, noticeType: o.noticeType || '', response: ''
   };
+  S.items.unshift(it);
+  return it;
+}
+function itemById(id) { for (var i = 0; i < S.items.length; i++) { if (S.items[i].id === id) { return S.items[i]; } } return null; }
+function overdue(it) { return it.status !== 'Closed' && it.due && now() > it.due; }
+function itemStatusPill(it) {
+  if (it.status === 'Closed') { return pill('Closed', 'ok'); }
+  var p = pill(it.status, it.status === 'Open' ? 'bad' : 'warn');
+  return overdue(it) ? p + ' ' + pill('Overdue', 'bad') : p;
+}
 
-  document.body.addEventListener('click', function (e) {
-    var t = e.target, v;
-    var row = t.closest && t.closest('tr[data-series]');
-    if (row) { ui.sel = row.getAttribute('data-series'); renderOperator(); return; }
-    if ((v = t.getAttribute('data-ack'))) { engine.acknowledge(+v); }
-    else if ((v = t.getAttribute('data-act'))) { ui.actionFor = +v; renderOperator(); }
-    else if ((v = t.getAttribute('data-save'))) {
-      var txt = $('action-input').value.trim();
-      if (txt) { engine.logAction(+v, txt); ui.actionFor = null; }
-    } else if ((v = t.getAttribute('data-insp'))) { engine.requestInspection(v, 'Inspection requested after review of exceedance feed'); }
+var api = {
+  addResult: function (r, u, t, sample) {
+    var rec = { id: nextRef('LAB'), op: r.op, point: r.point, lab: r.lab, accr: r.accr, sampleId: r.sampleId, sampled: r.sampled, analysed: r.analysed,
+      method: r.method, values: r.values, t: t, by: who(u), status: 'Submitted', comment: '', reviewBy: '', reviewAt: null, breaches: [], sample: !!sample };
+    Object.keys(r.values).forEach(function (pid) {
+      var p = param(pid); if (!p) { return; }
+      if (!within(p, r.values[pid])) {
+        rec.breaches.push(pid);
+        addItem({ op: r.op, origin: 'Laboratory result', level: 'Limit breach', point: r.point, param: pid, value: r.values[pid], link: rec.id,
+          text: p.label + ' ' + fmtVal(p, r.values[pid]) + ' against ' + limitText(p) + ' in sample ' + r.sampleId, due: t + CONFIG.dueDays['Limit breach'] * DAY, sample: sample }, null, t);
+      }
+    });
+    S.results.unshift(rec);
+    S.schedule.forEach(function (s) { if (s.op === r.op && s.point === r.point && (!s.last || r.sampled > s.last)) { s.last = r.sampled; } });
+    logAct(u, r.op, 'Submitted laboratory result ' + rec.id + ' for ' + ptName(r.point) + (rec.breaches.length ? ' with ' + rec.breaches.length + ' limit breach(es)' : ', all within limits'), t);
+    return rec;
+  },
+  addDoc: function (d, u, t, sample) {
+    var rec = { id: nextRef('DOC'), op: d.op, role: d.role, title: d.title, type: d.type, period: d.period, notes: d.notes || '', file: d.file || null,
+      t: t, by: who(u), status: d.role === 'operator' ? 'Submitted' : 'Issued', comment: '', reviewBy: '', reviewAt: null, sample: !!sample };
+    S.docs.unshift(rec);
+    (d.suggestions || []).forEach(function (txt) {
+      addItem({ op: d.op, origin: 'Regulator report', level: 'Required action', text: txt, link: rec.id, due: t + (d.dueDays || 14) * DAY, sample: sample }, u, t);
+    });
+    logAct(u, d.op, (d.role === 'operator' ? 'Submitted ' : 'Issued ') + d.type.toLowerCase() + ' ' + rec.id + ': ' + d.title + (d.suggestions && d.suggestions.length ? ', with ' + d.suggestions.length + ' required action(s)' : ''), t);
+    return rec;
+  },
+  addInspection: function (o, u, t, sample) {
+    var rec = { id: nextRef('INS'), op: o.op, date: o.date, findings: o.findings, photos: o.photos || [], file: o.file || null, t: t, by: who(u), sample: !!sample, actions: [] };
+    (o.suggestions || []).forEach(function (txt) {
+      var it = addItem({ op: o.op, origin: 'Inspection', level: 'Required action', text: txt, link: rec.id, due: t + (o.dueDays || 14) * DAY, sample: sample }, u, t);
+      rec.actions.push(it.id);
+    });
+    S.inspections.unshift(rec);
+    logAct(u, o.op, 'Recorded inspection ' + rec.id + ' with ' + rec.actions.length + ' required action(s)', t);
+    return rec;
+  },
+  addNotice: function (o, u, t, sample) {
+    var it = addItem({ op: o.op, origin: 'Compliance notice', level: 'Required action', noticeType: o.type, text: o.text, due: o.deadline, sample: sample }, u, t);
+    logAct(u, o.op, 'Issued ' + o.type.toLowerCase() + ' ' + it.id + ', deadline ' + fdate(o.deadline), t);
+    return it;
+  },
+  addIncident: function (o, u, t, sample) {
+    var rec = { id: nextRef('INC'), op: o.op, point: o.point, kind: o.kind, occurred: o.occurred, desc: o.desc, immediate: o.immediate, photos: o.photos || [],
+      t: t, by: who(u), status: 'Reported', ackBy: '', ackAt: null, note: '', sample: !!sample };
+    S.incidents.unshift(rec);
+    addItem({ op: o.op, origin: 'Incident', level: 'Required action', point: o.point, link: rec.id, text: 'Submit an investigation report for incident ' + rec.id + ' (' + o.kind.toLowerCase() + ')', due: t + CONFIG.dueDays.Incident * DAY, sample: sample }, null, t);
+    logAct(u, o.op, 'Reported incident ' + rec.id + ': ' + o.kind, t);
+    return rec;
+  },
+  addComplaint: function (o, t, sample) {
+    var rec = { id: nextRef('CMP'), name: o.name || 'Anonymous', contact: o.contact || '', op: o.op || '', location: o.location, desc: o.desc, photos: o.photos || [], t: t,
+      status: 'Received', note: '', noteBy: '', noteAt: null, sample: !!sample };
+    S.complaints.unshift(rec);
+    logAct({ role: 'community', name: rec.name }, o.op, 'Submitted community concern ' + rec.id + ' at ' + o.location, t);
+    return rec;
+  }
+};
+
+/* ---------------- live simulation ---------------- */
+var series = {};
+var HIST = 90, WIN = 300;
+var windows = {};
+function skey(op, pt, pm) { return op + '|' + pt + '|' + pm; }
+var seed = 12345;
+function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+function gauss() { var u = 1 - rnd(), v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function simBase(op, pt, pm) {
+  var p = param(pm), sm = SIM[pm];
+  var base = pm === 'ec' ? ptById(pt).baseline * 1.05 : sm.base;
+  var edge = p.max !== null ? (pm === 'ec' ? ptById(pt).baseline * CONFIG.warnFactor : p.max) : p.min;
+  return base + op.stress * 0.5 * (edge - base);
+}
+function initSeries() {
+  OPERATORS.forEach(function (op) {
+    windows[op.id] = [];
+    POINTS.forEach(function (pt) {
+      pt.live.forEach(function (pm) {
+        var b = simBase(op, pt.id, pm);
+        series[skey(op.id, pt.id, pm)] = { op: op.id, point: pt.id, param: pm, base: b, sd: SIM[pm].sd * (1 + op.stress), spike: null, values: [b], times: [now()], state: 'ok', n: 0, sum: 0, min: Infinity, max: -Infinity, exceed: 0, warn: 0 };
+      });
+    });
   });
-
-  document.body.addEventListener('change', function (e) {
-    var spec = e.target.getAttribute && e.target.getAttribute('data-limit');
-    if (!spec) { return; }
-    var parts = spec.split(':'), val = parseFloat(e.target.value);
-    if (!isNaN(val)) { E.PARAMS[parts[0]][parts[1]] = val; }
+}
+function startSpike(s) {
+  var p = param(s.param);
+  var target;
+  if (s.param === 'ph') { target = rnd() < 0.5 ? p.max + 0.9 : p.min - 0.9; }
+  else if (s.param === 'free') { target = p.min - 0.5; }
+  else { target = p.max + SIM[s.param].span; }
+  s.spike = { left: 6 + Math.floor(rnd() * 6), target: target };
+}
+function nextVal(s, op) {
+  var v = s.values[s.values.length - 1];
+  if (!s.spike && rnd() < 0.0035 * (0.4 + op.stress * 2)) { startSpike(s); }
+  if (s.spike) { v += (s.spike.target - v) * 0.4 + gauss() * s.sd * 0.5; s.spike.left -= 1; if (s.spike.left <= 0) { s.spike = null; } }
+  else { v += (s.base - v) * 0.3 + gauss() * s.sd; }
+  if (s.param === 'ph') { v = Math.min(14, Math.max(0, v)); } else if (s.param === 'free') { v = Math.max(0.2, v); } else { v = Math.max(0, v); }
+  return Math.round(v * 1000) / 1000;
+}
+function liveState(s, v) {
+  var p = param(s.param);
+  if (!within(p, v)) { return 'breach'; }
+  if (s.param === 'ec' && v > ptById(s.point).baseline * CONFIG.warnFactor) { return 'warn'; }
+  return 'ok';
+}
+var openLive = {};
+function rebuildOpenLive() {
+  openLive = {};
+  S.items.forEach(function (it) { if (it.origin === 'Live reading' && it.status !== 'Closed') { openLive[skey(it.op, it.point, it.param) + '|' + it.level] = it; } });
+}
+function ingest(s, v, t) {
+  s.values.push(v); s.times.push(t);
+  if (s.values.length > HIST) { s.values.shift(); s.times.shift(); }
+  var st = liveState(s, v); s.state = st;
+  s.n += 1; s.sum += v; if (v < s.min) { s.min = v; } if (v > s.max) { s.max = v; }
+  if (st === 'breach') { s.exceed += 1; } if (st === 'warn') { s.warn += 1; }
+  var w = windows[s.op]; w.push(st !== 'breach'); if (w.length > WIN) { w.shift(); }
+  var p = param(s.param);
+  ['Early warning', 'Limit breach'].forEach(function (level) {
+    var k = skey(s.op, s.point, s.param) + '|' + level, it = openLive[k];
+    var hit = !warmup && (level === 'Limit breach' ? st === 'breach' : st === 'warn');
+    if (hit) {
+      if (!it) {
+        var txt = level === 'Limit breach' ? p.label + ' outside licence limit (' + limitText(p) + '). Investigate and take corrective action.'
+          : 'Conductivity above ' + CONFIG.warnFactor + ' times the station baseline (' + ptById(s.point).baseline + ' µS/cm). Take a laboratory sample and check pH, sulphate and turbidity.';
+        it = addItem({ op: s.op, origin: 'Live reading', level: level, point: s.point, param: s.param, value: v, active: true, text: txt, due: t + CONFIG.dueDays[level] * DAY }, null, t);
+        openLive[k] = it; dirty = true;
+        logAct({ role: 'system', name: 'Monitoring system' }, s.op, level + ' ' + it.id + ': ' + p.label + ' ' + fmtVal(p, v) + ' at ' + ptName(s.point), t);
+      } else {
+        it.active = true; it.inCount = 0;
+        var worse = s.param === 'free' || (s.param === 'ph' && v < p.min) ? v < it.value : v > it.value;
+        if (worse) { it.value = v; }
+      }
+    } else if (it && it.active) {
+      it.inCount += 1;
+      if (it.inCount >= 3) { it.active = false; dirty = true; }
+    }
+    if (it && it.status === 'Action logged' && !it.active) { closeItem(it, { role: 'system', name: 'Monitoring system' }, 'Readings back within range after the logged action'); delete openLive[k]; }
   });
+}
+var dirty = false, warmup = false;
+function tick(t) {
+  OPERATORS.forEach(function (op) {
+    POINTS.forEach(function (pt) {
+      pt.live.forEach(function (pm) { var s = series[skey(op.id, pt.id, pm)]; ingest(s, nextVal(s, op), t); });
+    });
+  });
+}
+function score(opId) { var w = windows[opId]; if (!w.length) { return 100; } var ok = 0; w.forEach(function (x) { if (x) { ok += 1; } }); return 100 * ok / w.length; }
 
-  $('pause-btn').onclick = function () { ui.paused = !ui.paused; this.textContent = ui.paused ? 'Resume feed' : 'Pause feed'; };
-  $('breach-btn').onclick = function () { engine.forceBreach(ui.op); };
-  $('print-btn').onclick = function () { window.print(); };
-  $('csv-btn').onclick = csv;
-  window.addEventListener('resize', function () { if (ui.tab === 'operator') { renderOperator(); } });
+/* ---------------- item workflow ---------------- */
+function closeItem(it, u, note) {
+  it.status = 'Closed'; it.closedAt = now(); it.closedBy = who(u);
+  if (note) { it.response = it.response ? it.response : ''; it.closeNote = note; }
+  logAct(u, it.op, 'Closed ' + it.id + (note ? ': ' + note : ''));
+  dirty = true;
+}
 
-  engine.on(render);
-  for (var i = 0; i < 60; i++) { engine.tick(Date.now() - (60 - i) * 3000); }
-  engine.events = []; engine.openByKey = {};
-  Object.keys(engine.series).forEach(function (k) { var s = engine.series[k]; s.exceed = 0; s.n = 0; s.sum = 0; s.min = Infinity; s.max = -Infinity; });
-  Object.keys(engine.windows).forEach(function (k) { engine.windows[k] = []; });
-  engine.startedAt = Date.now();
-  setInterval(function () { if (!ui.paused) { engine.tick(Date.now()); } }, 3000);
+/* ---------------- UI state ---------------- */
+var ui = { role: 'operator', op: 'c', tab: 'dashboard', sel: 'c|out|ec', paused: false, f: {}, repOp: 'c' };
+function user() {
+  var p = S.profiles[ui.role] || {};
+  if (ui.role === 'operator') { return { role: 'operator', name: p.name || 'Unnamed operator user', position: p.position || '', op: ui.op }; }
+  if (ui.role === 'inspector') { return { role: 'inspector', name: p.name || 'Unnamed inspector', position: p.position || 'Inspector', staff: p.staff || '' }; }
+  return { role: 'community', name: 'Community member' };
+}
+var TABS = {
+  operator: [['dashboard', 'Live dashboard'], ['lab', 'Laboratory results'], ['actions', 'Actions'], ['docs', 'Reports'], ['incidents', 'Incidents'], ['notices', 'Notices'], ['schedule', 'Sampling schedule'], ['licence', 'Licence'], ['limits', 'Limit register'], ['report', 'Compliance report'], ['log', 'Activity log']],
+  inspector: [['overview', 'Overview'], ['actions', 'Actions'], ['lab', 'Laboratory results'], ['docs', 'Reports'], ['inspections', 'Inspections'], ['notices', 'Notices'], ['incidents', 'Incidents'], ['complaints', 'Complaints'], ['schedule', 'Sampling schedule'], ['licence', 'Licences'], ['limits', 'Limit register'], ['report', 'Compliance report'], ['log', 'Activity log']],
+  community: [['concern', 'Report a concern']]
+};
+
+/* ---------------- filters ---------------- */
+function fstate(tab) { if (!ui.f[tab]) { ui.f[tab] = { op: '', status: '', q: '' }; } return ui.f[tab]; }
+function filterBar(tab, statuses, showOp) {
+  var f = fstate(tab), h = '<div class="bar no-print">';
+  if (showOp) { h += '<select data-f="op" data-tab="' + tab + '"><option value="">All operators</option>' + OPERATORS.map(function (o) { return '<option value="' + o.id + '"' + (f.op === o.id ? ' selected' : '') + '>' + esc(o.name) + '</option>'; }).join('') + '</select>'; }
+  if (statuses) { h += '<select data-f="status" data-tab="' + tab + '"><option value="">All statuses</option>' + statuses.map(function (s) { return '<option' + (f.status === s ? ' selected' : '') + '>' + esc(s) + '</option>'; }).join('') + '</select>'; }
+  h += '<input type="text" data-f="q" data-tab="' + tab + '" placeholder="Search text" value="' + esc(f.q) + '" size="22">';
+  return h;
+}
+function applyF(tab, list, statusFn, textFn) {
+  var f = fstate(tab), q = f.q.toLowerCase();
+  return list.filter(function (r) {
+    if (ui.role === 'operator' && r.op !== undefined && r.op !== ui.op) { return false; }
+    if (f.op && r.op !== f.op) { return false; }
+    if (f.status && statusFn(r) !== f.status) { return false; }
+    if (q && textFn(r).toLowerCase().indexOf(q) < 0) { return false; }
+    return true;
+  });
+}
+
+/* ---------------- render ---------------- */
+function render() {
+  $('clock').textContent = fclock(now());
+  $('storage-note').innerHTML = storageOk ? '' : '<div class="note">' + esc(storageMsg) + '</div>';
+  renderNav();
+  var fn = R[ui.tab]; $('main').innerHTML = fn ? fn() : '';
+  if (ui.tab === 'dashboard') { drawChart(); }
+}
+function counts() {
+  var c = { actions: 0, notices: 0, incidents: 0, complaints: 0, lab: 0, docs: 0 };
+  S.items.forEach(function (it) {
+    if (ui.role === 'operator' && it.op !== ui.op) { return; }
+    if (it.status === 'Open' || overdue(it)) { c.actions += 1; }
+    if (it.origin === 'Compliance notice' && it.status !== 'Closed') { c.notices += 1; }
+  });
+  S.incidents.forEach(function (r) { if (r.status === 'Reported' && (ui.role !== 'operator' || r.op === ui.op)) { c.incidents += 1; } });
+  S.complaints.forEach(function (r) { if (r.status === 'Received') { c.complaints += 1; } });
+  if (ui.role === 'inspector') {
+    S.results.forEach(function (r) { if (r.status === 'Submitted') { c.lab += 1; } });
+    S.docs.forEach(function (r) { if (r.status === 'Submitted') { c.docs += 1; } });
+  }
+  return c;
+}
+function renderNav() {
+  var c = counts();
+  $('tabs').innerHTML = TABS[ui.role].map(function (t) {
+    var n = c[t[0]] || 0;
+    return '<button data-tab="' + t[0] + '" class="' + (ui.tab === t[0] ? 'active' : '') + '">' + esc(t[1]) + (n ? '<span class="cnt">' + n + '</span>' : '') + '</button>';
+  }).join('');
+  $('op-wrap').style.display = ui.role === 'operator' ? '' : 'none';
+  var u = user();
+  $('who').textContent = ui.role === 'community' ? 'Community member' : u.name + (ui.role === 'inspector' && u.staff ? ' (' + u.staff + ')' : '');
+}
+function kpi(v, l, bad) { return '<div class="kpi"><div class="v' + (bad ? ' bad' : '') + '">' + v + '</div><div class="l">' + esc(l) + '</div></div>'; }
+function opStats(id) {
+  var r = { open: 0, overdue: 0, warn: 0, breach: 0, incidents: 0, schedOver: 0 };
+  S.items.forEach(function (it) { if (it.op !== id || it.status === 'Closed') { return; } r.open += 1; if (overdue(it)) { r.overdue += 1; } if (it.level === 'Early warning') { r.warn += 1; } if (it.level === 'Limit breach') { r.breach += 1; } });
+  S.incidents.forEach(function (x) { if (x.op === id && x.status !== 'Closed') { r.incidents += 1; } });
+  S.schedule.forEach(function (s) { if (s.op === id && now() > s.last + s.freq * DAY) { r.schedOver += 1; } });
+  return r;
+}
+function licStatus(op) {
+  var exp = S.created + op.licence.expiry * DAY, days = Math.round((exp - now()) / DAY);
+  if (days < 0) { return { p: pill('Expired', 'bad'), days: days, exp: exp }; }
+  if (days <= 90) { return { p: pill('Expires in ' + days + ' days', 'warn'), days: days, exp: exp }; }
+  return { p: pill('Valid', 'ok'), days: days, exp: exp };
+}
+
+var R = {};
+R.dashboard = function () {
+  var op = opById(ui.op), st = opStats(op.id);
+  var h = '<h2 class="page">' + esc(op.name) + ', ' + esc(op.town) + '</h2><p class="lead">' + esc(op.company) + '. Licence ' + esc(op.licence.no) + '. Live probe readings every 3 seconds (simulated).</p>';
+  h += '<div class="bar no-print"><button class="btn alt" id="pause-btn">' + (ui.paused ? 'Resume feed' : 'Pause feed') + '</button><button class="btn alt" id="breach-btn">Simulate a breach</button><button class="btn" data-open="lab">Enter laboratory result</button><button class="btn alt" data-open="incident">Report an incident</button></div>';
+  h += '<div class="kpis">' + kpi(score(op.id).toFixed(1) + '%', 'Live readings within limits, recent window') + kpi(st.warn, 'Open early warnings', st.warn > 0) + kpi(st.breach, 'Open limit breaches', st.breach > 0) + kpi(st.overdue, 'Overdue actions', st.overdue > 0) + kpi(st.schedOver, 'Overdue laboratory samples', st.schedOver > 0) + '</div>';
+  h += '<div class="grid">';
+  POINTS.forEach(function (pt) {
+    h += '<div class="card"><h3>' + esc(pt.name) + ' <span class="muted small">' + esc(pt.code) + '</span></h3><table><tr><th>Parameter</th><th>Reading</th><th>Limit</th><th>Status</th></tr>';
+    pt.live.forEach(function (pm) {
+      var s = series[skey(op.id, pt.id, pm)], p = param(pm), v = s.values[s.values.length - 1], k = skey(op.id, pt.id, pm);
+      var stp = s.state === 'breach' ? pill('Limit breach', 'bad') : s.state === 'warn' ? pill('Early warning', 'warn') : pill('Within limit', 'ok');
+      h += '<tr class="pick' + (ui.sel === k ? ' sel' : '') + '" data-series="' + k + '"><td>' + esc(p.label) + '</td><td class="nw">' + fmtVal(p, v) + '</td><td class="nw">' + esc(limitText(p)) + '</td><td>' + stp + '</td></tr>';
+    });
+    h += '</table></div>';
+  });
+  h += '</div>';
+  var s = series[ui.sel];
+  if (s && s.op === op.id) {
+    var p = param(s.param);
+    h += '<div class="card mt"><h3>' + esc(ptName(s.point)) + ', ' + esc(p.label) + (p.unit ? ' (' + esc(p.unit) + ')' : '') + '</h3><canvas id="chart" role="img" aria-label="Trend of the last 90 readings with limit lines"></canvas><p class="small muted">Blue line: readings. Red dashed line: licence limit. Amber dashed line: early warning level (conductivity only).</p></div>';
+  }
+  h += '<div class="card mt"><h3>Open items for this operator</h3>' + itemsTable(S.items.filter(function (it) { return it.op === op.id && it.status !== 'Closed'; }).slice(0, 12), false) + '</div>';
+  return h;
+};
+function drawChart() {
+  var c = $('chart'); if (!c) { return; }
+  var s = series[ui.sel], p = param(s.param), vals = s.values;
+  var dpr = window.devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight;
+  if (!w || vals.length < 2) { return; }
+  c.width = w * dpr; c.height = h * dpr;
+  var g = c.getContext('2d'); g.scale(dpr, dpr);
+  var font = '12px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+  var warnLine = s.param === 'ec' ? ptById(s.point).baseline * CONFIG.warnFactor : null;
+  var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+  [p.min, p.max, warnLine].forEach(function (x) { if (x !== null) { lo = Math.min(lo, x); hi = Math.max(hi, x); } });
+  var span = (hi - lo) || 1; lo -= span * 0.12; hi += span * 0.12;
+  var L = 60, Rr = 14, T = 12, B = 26;
+  var X = function (i) { return L + (w - L - Rr) * i / (vals.length - 1); };
+  var Y = function (v) { return T + (h - T - B) * (1 - (v - lo) / (hi - lo)); };
+  g.font = font; g.fillStyle = '#4a5560'; g.strokeStyle = '#e3e6ea'; g.lineWidth = 1; g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (var i = 0; i <= 4; i++) { var gv = lo + (hi - lo) * i / 4, gy = Y(gv); g.beginPath(); g.moveTo(L, gy); g.lineTo(w - Rr, gy); g.stroke(); g.fillText(gv.toFixed(p.dec), L - 8, gy); }
+  g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.fillText(fclock(s.times[0]), L, h - 6);
+  g.textAlign = 'right'; g.fillText(fclock(s.times[s.times.length - 1]), w - Rr, h - 6);
+  function hline(v, col, label, above) {
+    g.strokeStyle = col; g.setLineDash([6, 4]); g.lineWidth = 1.5; g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(w - Rr, Y(v)); g.stroke(); g.setLineDash([]);
+    g.fillStyle = col; g.textAlign = 'left'; g.textBaseline = above ? 'bottom' : 'top'; g.fillText(label, L + 6, Y(v) + (above ? -3 : 3));
+  }
+  if (p.max !== null) { hline(p.max, '#b3261e', 'Limit ' + p.max, true); }
+  if (p.min !== null) { hline(p.min, '#b3261e', 'Limit ' + p.min, false); }
+  if (warnLine !== null) { hline(warnLine, '#a15c00', 'Early warning ' + warnLine, true); }
+  g.strokeStyle = '#1f5f8b'; g.lineWidth = 2; g.beginPath();
+  vals.forEach(function (v, k) { if (k === 0) { g.moveTo(X(k), Y(v)); } else { g.lineTo(X(k), Y(v)); } });
+  g.stroke();
+}
+
+R.overview = function () {
+  var tot = { open: 0, overdue: 0, inc: 0, cmp: 0 };
+  OPERATORS.forEach(function (o) { var st = opStats(o.id); tot.open += st.open; tot.overdue += st.overdue; tot.inc += st.incidents; });
+  S.complaints.forEach(function (c) { if (c.status !== 'Resolved') { tot.cmp += 1; } });
+  var h = '<h2 class="page">Regulator overview</h2><p class="lead">All operators on one screen. Live readings are simulated. Counts include sample records.</p>';
+  h += '<div class="bar no-print"><button class="btn" data-open="inspection">Record an inspection</button><button class="btn alt" data-open="notice">Issue a notice</button><button class="btn alt" data-open="doc-ins">Upload a report</button></div>';
+  h += '<div class="kpis">' + kpi(OPERATORS.length, 'Operators monitored') + kpi(tot.open, 'Open items across operators') + kpi(tot.overdue, 'Overdue items', tot.overdue > 0) + kpi(tot.inc, 'Open incidents', tot.inc > 0) + kpi(tot.cmp, 'Open community concerns', tot.cmp > 0) + '</div>';
+  h += '<div class="two"><div class="card"><h3>Operators</h3><table><tr><th>Operator</th><th>Within limits</th><th>Open</th><th>Overdue</th><th>Samples overdue</th><th>Incidents</th><th>Licence</th><th>Status</th></tr>';
+  OPERATORS.forEach(function (o) {
+    var st = opStats(o.id), lic = licStatus(o);
+    var status = st.overdue || st.breach ? pill('Attention needed', 'bad') : st.open ? pill('Action in progress', 'warn') : pill('Compliant', 'ok');
+    h += '<tr><td>' + esc(o.name) + '<div class="small muted">' + esc(o.town) + '</div></td><td>' + score(o.id).toFixed(1) + '%</td><td>' + st.open + '</td><td>' + st.overdue + '</td><td>' + st.schedOver + '</td><td>' + st.incidents + '</td><td>' + lic.p + '</td><td>' + status + '</td></tr>';
+  });
+  h += '</table></div><div class="card"><h3>Site map, Copperbelt and North-Western Province</h3>' + mapSvg() + '</div></div>';
+  h += '<div class="card mt"><h3>Overdue items, most overdue first</h3>' + itemsTable(S.items.filter(overdue).sort(function (a, b) { return a.due - b.due; }).slice(0, 15), true) + '</div>';
+  return h;
+};
+function mapSvg() {
+  var s = '<svg viewBox="0 0 400 270" width="100%" role="img" aria-label="Schematic site map"><rect x="1" y="1" width="398" height="268" rx="8" fill="#f1f5f2" stroke="#d9e0dc"/>';
+  OPERATORS.forEach(function (o) {
+    var st = opStats(o.id), col = st.overdue || st.breach ? '#b3261e' : st.open ? '#a15c00' : '#1e7a46', x = 30 + o.x * 340, y = 30 + o.y * 200;
+    s += '<circle cx="' + x + '" cy="' + y + '" r="9" fill="' + col + '"/><text x="' + x + '" y="' + (y + 24) + '" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#1c2630">' + esc(o.town) + '</text>';
+  });
+  return s + '<text x="12" y="260" font-family="system-ui, sans-serif" font-size="11" fill="#5a6672">Schematic, not to scale. Red attention, amber in progress, green clear.</text></svg>';
+}
+
+function itemsTable(list, showOp) {
+  if (!list.length) { return '<p class="muted">No items.</p>'; }
+  var ins = ui.role === 'inspector';
+  var h = '<table><tr><th>Reference</th>' + (showOp ? '<th>Operator</th>' : '') + '<th>Raised</th><th>Source and level</th><th>Description</th><th>Due</th><th>Status</th><th class="no-print">Actions</th></tr>';
+  list.forEach(function (it) {
+    var p = it.param ? param(it.param) : null;
+    var desc = esc(it.text) + (it.point ? '<div class="small muted">' + esc(ptName(it.point)) + (p && it.value != null ? ', peak ' + esc(fmtVal(p, it.value)) : '') + (it.origin === 'Live reading' && it.active ? ', still active' : '') + '</div>' : '');
+    if (it.action) { desc += '<div class="small"><b>Action:</b> ' + esc(it.action) + ' <span class="muted">(' + esc(it.actionBy) + ', ' + ftime(it.actionAt) + ')</span></div>'; }
+    if (it.closedAt) { desc += '<div class="small muted">Closed ' + ftime(it.closedAt) + ' by ' + esc(it.closedBy) + '</div>'; }
+    var b = '';
+    if (!ins && it.status === 'Open') { b += '<button class="btn small alt" data-ack="' + it.id + '">Acknowledge</button> '; }
+    if (!ins && (it.status === 'Open' || it.status === 'Acknowledged')) { b += '<button class="btn small" data-act="' + it.id + '">Log action</button>'; }
+    if (ins && it.status === 'Action logged' && it.origin !== 'Live reading') { b += '<button class="btn small" data-close="' + it.id + '">Accept and close</button> <button class="btn small alt" data-reopen="' + it.id + '">Query</button>'; }
+    if (ins && it.status !== 'Closed') { b += ' <button class="btn small alt" data-due="' + it.id + '">Change due date</button>'; }
+    h += '<tr><td class="nw">' + esc(it.id) + sampleTag(it) + '</td>' + (showOp ? '<td>' + esc(opName(it.op)) + '</td>' : '') + '<td class="nw">' + ftime(it.t) + '</td><td>' + esc(it.origin) + '<div class="small">' +
+      pill(it.noticeType || it.level, it.level === 'Limit breach' ? 'bad' : it.level === 'Early warning' ? 'warn' : 'neutral') + '</div></td><td>' + desc + '</td><td class="nw">' + fdate(it.due) + '</td><td>' + itemStatusPill(it) + '</td><td class="no-print">' + b + '</td></tr>';
+  });
+  return h + '</table>';
+}
+R.actions = function () {
+  var list = applyF('actions', S.items, function (it) { return overdue(it) ? 'Overdue' : it.status; }, function (it) { return it.id + ' ' + it.text + ' ' + it.origin + ' ' + it.level + ' ' + opName(it.op); });
+  return '<h2 class="page">Action register</h2><p class="lead">Every item that needs a response: live early warnings and breaches, laboratory breaches, inspection and report actions, notices and incident follow-up. Each has a due date; overdue items are flagged for the regulator.</p>' +
+    filterBar('actions', ['Open', 'Acknowledged', 'Action logged', 'Overdue', 'Closed'], ui.role === 'inspector') + '</div><div class="card">' + itemsTable(list.slice(0, 200), ui.role === 'inspector') + '</div>';
+};
+R.notices = function () {
+  var list = applyF('notices', S.items.filter(function (it) { return it.origin === 'Compliance notice'; }), function (it) { return overdue(it) ? 'Overdue' : it.status; }, function (it) { return it.id + ' ' + it.text + ' ' + opName(it.op); });
+  var h = '<h2 class="page">Notices and compliance orders</h2><p class="lead">Issued by the regulator with a required action and a deadline. The operator responds by logging the action taken; the inspector accepts or queries it.</p>';
+  h += filterBar('notices', ['Open', 'Acknowledged', 'Action logged', 'Overdue', 'Closed'], ui.role === 'inspector') + (ui.role === 'inspector' ? '<button class="btn" data-open="notice">Issue a notice</button>' : '') + '</div>';
+  return h + '<div class="card">' + itemsTable(list, ui.role === 'inspector') + '</div>';
+};
+
+R.lab = function () {
+  var list = applyF('lab', S.results, function (r) { return r.status; }, function (r) { return r.id + ' ' + r.sampleId + ' ' + r.lab + ' ' + opName(r.op) + ' ' + ptName(r.point); });
+  var labParams = params('lab');
+  var h = '<h2 class="page">Laboratory results</h2><p class="lead">Results are checked automatically against the limit register when submitted. Any breach creates an action with a due date. The regulator verifies or queries each result.</p>';
+  h += filterBar('lab', ['Submitted', 'Verified', 'Queried'], ui.role === 'inspector') + (ui.role === 'operator' ? '<button class="btn" data-open="lab">Enter laboratory result</button>' : '') + '</div>';
+  if (!list.length) { return h + '<div class="card"><p class="muted">No laboratory results yet.</p></div>'; }
+  list.forEach(function (r) {
+    h += '<div class="card mt"><h3>' + esc(r.id) + ', ' + esc(opName(r.op)) + ', ' + esc(ptName(r.point)) + sampleTag(r) + ' ' + pill(r.status, r.status === 'Verified' ? 'ok' : r.status === 'Queried' ? 'bad' : 'neutral') + (r.breaches.length ? ' ' + pill(r.breaches.length + ' breach(es)', 'bad') : ' ' + pill('All within limits', 'ok')) + '</h3>';
+    h += '<dl class="kv small"><dt>Laboratory</dt><dd>' + esc(r.lab) + ', ' + esc(r.accr) + '</dd><dt>Sample ID</dt><dd>' + esc(r.sampleId) + '</dd><dt>Sampled and analysed</dt><dd>' + fdate(r.sampled) + ', ' + fdate(r.analysed) + '</dd><dt>Method</dt><dd>' + esc(r.method) + '</dd><dt>Submitted</dt><dd>' + ftime(r.t) + ' by ' + esc(r.by) + '</dd>' +
+      (r.reviewAt ? '<dt>Review</dt><dd>' + esc(r.status) + ' ' + ftime(r.reviewAt) + ' by ' + esc(r.reviewBy) + (r.comment ? ': ' + esc(r.comment) : '') + '</dd>' : '') + '</dl>';
+    h += '<table class="mt"><tr><th>Parameter</th><th>Result</th><th>Limit</th><th>Check</th></tr>';
+    Object.keys(r.values).forEach(function (pid) {
+      var p = param(pid); if (!p) { return; }
+      var br = r.breaches.indexOf(pid) >= 0;
+      h += '<tr><td>' + esc(p.label) + '</td><td class="nw' + (br ? ' breach' : '') + '">' + fmtVal(p, r.values[pid]) + '</td><td class="nw">' + esc(limitText(p)) + '</td><td>' + (br ? pill('Breach', 'bad') : pill('Within limit', 'ok')) + '</td></tr>';
+    });
+    h += '</table>';
+    if (ui.role === 'inspector') { h += '<div class="bar mt no-print"><button class="btn small" data-verify="' + r.id + '">Verify</button><button class="btn small alt" data-query="' + r.id + '">Query</button></div>'; }
+    h += '</div>';
+  });
+  return h;
+};
+
+function fileLink(f) { return f ? '<a href="' + f.data + '" download="' + esc(f.name) + '">' + esc(f.name) + '</a> <span class="muted small">(' + Math.round(f.size / 1024) + ' KB)</span>' : '<span class="muted">No file</span>'; }
+function photos(list) { return list && list.length ? '<div class="thumbs">' + list.map(function (p) { return '<a href="' + p + '" download="photo.jpg"><img src="' + p + '" alt="Photo"></a>'; }).join('') + '</div>' : ''; }
+R.docs = function () {
+  var list = applyF('docs', S.docs, function (r) { return r.status; }, function (r) { return r.id + ' ' + r.title + ' ' + r.type + ' ' + r.period + ' ' + opName(r.op) + ' ' + r.by; });
+  var h = '<h2 class="page">Reports register</h2><p class="lead">Reports uploaded by operators and by the regulator, each with a reference number and time stamp. The regulator reviews operator reports. Regulator reports can carry required actions for the operator.</p>';
+  h += filterBar('docs', ['Submitted', 'Under review', 'Accepted', 'Queried', 'Issued'], ui.role === 'inspector') + '<button class="btn" data-open="' + (ui.role === 'inspector' ? 'doc-ins' : 'doc-op') + '">Upload a report</button></div>';
+  h += '<div class="card"><table><tr><th>Reference</th>' + (ui.role === 'inspector' ? '<th>Operator</th>' : '') + '<th>Title and type</th><th>Period</th><th>From</th><th>Uploaded</th><th>File</th><th>Status</th><th class="no-print"></th></tr>';
+  if (!list.length) { h += '<tr><td colspan="9" class="muted">No reports yet.</td></tr>'; }
+  list.forEach(function (r) {
+    var b = '';
+    if (ui.role === 'inspector' && r.role === 'operator') { b = '<button class="btn small alt" data-review="' + r.id + '">Review</button>'; }
+    h += '<tr><td class="nw">' + esc(r.id) + sampleTag(r) + '</td>' + (ui.role === 'inspector' ? '<td>' + esc(opName(r.op)) + '</td>' : '') + '<td>' + esc(r.title) + '<div class="small muted">' + esc(r.type) + '</div>' + (r.notes ? '<div class="small">' + esc(r.notes) + '</div>' : '') +
+      (r.comment ? '<div class="small"><b>Review:</b> ' + esc(r.comment) + ' <span class="muted">(' + esc(r.reviewBy) + ', ' + ftime(r.reviewAt) + ')</span></div>' : '') + '</td><td>' + esc(r.period) + '</td><td>' + (r.role === 'operator' ? 'Operator' : 'Regulator') + '<div class="small muted">' + esc(r.by) + '</div></td><td class="nw">' + ftime(r.t) + '</td><td>' + fileLink(r.file) + '</td><td>' +
+      pill(r.status, r.status === 'Accepted' || r.status === 'Issued' ? 'ok' : r.status === 'Queried' ? 'bad' : 'neutral') + '</td><td class="no-print">' + b + '</td></tr>';
+  });
+  return h + '</table></div>';
+};
+R.inspections = function () {
+  var list = applyF('inspections', S.inspections, function () { return ''; }, function (r) { return r.id + ' ' + r.findings + ' ' + opName(r.op) + ' ' + r.by; });
+  var h = '<h2 class="page">Inspections</h2><p class="lead">Site visits with findings, photos, an optional report file and required actions for the operator.</p>' + filterBar('inspections', null, true) + '<button class="btn" data-open="inspection">Record an inspection</button></div>';
+  if (!list.length) { h += '<div class="card"><p class="muted">No inspections yet.</p></div>'; }
+  list.forEach(function (r) {
+    h += '<div class="card mt"><h3>' + esc(r.id) + ', ' + esc(opName(r.op)) + ', visit on ' + fdate(r.date) + sampleTag(r) + '</h3><dl class="kv small"><dt>Inspector</dt><dd>' + esc(r.by) + '</dd><dt>Recorded</dt><dd>' + ftime(r.t) + '</dd><dt>Report file</dt><dd>' + fileLink(r.file) + '</dd><dt>Required actions</dt><dd>' + (r.actions.length ? r.actions.map(esc).join(', ') : 'None') + '</dd></dl><p>' + esc(r.findings) + '</p>' + photos(r.photos) + '</div>';
+  });
+  return h;
+};
+R.incidents = function () {
+  var list = applyF('incidents', S.incidents, function (r) { return r.status; }, function (r) { return r.id + ' ' + r.kind + ' ' + r.desc + ' ' + opName(r.op); });
+  var h = '<h2 class="page">Incidents</h2><p class="lead">Spills, seepage and other events reported by operators. The regulator sees new incidents at once and acknowledges them.</p>';
+  h += filterBar('incidents', ['Reported', 'Acknowledged', 'Closed'], ui.role === 'inspector') + (ui.role === 'operator' ? '<button class="btn warn" data-open="incident">Report an incident</button>' : '') + '</div>';
+  if (!list.length) { h += '<div class="card"><p class="muted">No incidents.</p></div>'; }
+  list.forEach(function (r) {
+    h += '<div class="card mt"><h3>' + esc(r.id) + ', ' + esc(r.kind) + ', ' + esc(opName(r.op)) + sampleTag(r) + ' ' + pill(r.status, r.status === 'Reported' ? 'bad' : r.status === 'Closed' ? 'ok' : 'warn') + '</h3><dl class="kv small"><dt>Location</dt><dd>' + esc(ptName(r.point)) + '</dd><dt>Occurred</dt><dd>' + ftime(r.occurred) + '</dd><dt>Reported</dt><dd>' + ftime(r.t) + ' by ' + esc(r.by) + '</dd><dt>Immediate action</dt><dd>' + esc(r.immediate) + '</dd>' +
+      (r.ackAt ? '<dt>Regulator</dt><dd>' + esc(r.status) + ' ' + ftime(r.ackAt) + ' by ' + esc(r.ackBy) + (r.note ? ': ' + esc(r.note) : '') + '</dd>' : '') + '</dl><p>' + esc(r.desc) + '</p>' + photos(r.photos) +
+      (ui.role === 'inspector' && r.status !== 'Closed' ? '<div class="bar no-print"><button class="btn small" data-incack="' + r.id + '">' + (r.status === 'Reported' ? 'Acknowledge' : 'Close incident') + '</button></div>' : '') + '</div>';
+  });
+  return h;
+};
+R.complaints = function () {
+  var list = applyF('complaints', S.complaints, function (r) { return r.status; }, function (r) { return r.id + ' ' + r.location + ' ' + r.desc + ' ' + r.name; });
+  var h = '<h2 class="page">Community concerns</h2><p class="lead">Pollution concerns reported by community members through the Report a concern screen.</p>' + filterBar('complaints', ['Received', 'Under investigation', 'Resolved'], true) + '</div>';
+  if (!list.length) { h += '<div class="card"><p class="muted">No concerns reported.</p></div>'; }
+  list.forEach(function (r) {
+    h += '<div class="card mt"><h3>' + esc(r.id) + ', ' + esc(r.location) + sampleTag(r) + ' ' + pill(r.status, r.status === 'Received' ? 'bad' : r.status === 'Resolved' ? 'ok' : 'warn') + '</h3><dl class="kv small"><dt>Reported by</dt><dd>' + esc(r.name) + (r.contact ? ', ' + esc(r.contact) : '') + '</dd><dt>Received</dt><dd>' + ftime(r.t) + '</dd><dt>Nearest operator</dt><dd>' + esc(r.op ? opName(r.op) : 'Not stated') + '</dd>' +
+      (r.noteAt ? '<dt>Regulator</dt><dd>' + esc(r.status) + ' ' + ftime(r.noteAt) + ' by ' + esc(r.noteBy) + (r.note ? ': ' + esc(r.note) : '') + '</dd>' : '') + '</dl><p>' + esc(r.desc) + '</p>' + photos(r.photos) +
+      (r.status !== 'Resolved' ? '<div class="bar no-print"><button class="btn small" data-cmp="' + r.id + '">Update status</button></div>' : '') + '</div>';
+  });
+  return h;
+};
+R.schedule = function () {
+  var h = '<h2 class="page">Sampling schedule</h2><p class="lead">Laboratory sampling required at each monitoring point. Submitting a laboratory result updates the last sample date. Overdue sampling is flagged.</p><div class="card"><table><tr><th>Operator</th><th>Monitoring point</th><th>Point type and coordinates</th><th>Every</th><th>Last sampled</th><th>Next due</th><th>Status</th></tr>';
+  S.schedule.filter(function (s) { return ui.role !== 'operator' || s.op === ui.op; }).forEach(function (s) {
+    var o = opById(s.op), pt = ptById(s.point), due = s.last + s.freq * DAY, late = now() > due, soon = !late && due - now() < 7 * DAY;
+    h += '<tr><td>' + esc(o.name) + '</td><td>' + esc(pt.name) + ' <span class="muted small">' + esc(pt.code) + '</span></td><td class="small">' + esc(pt.type) + '<div class="muted">' + (o.lat + pt.dLat).toFixed(4) + ', ' + (o.lon + pt.dLon).toFixed(4) + ' (demonstration)</div></td><td>' + s.freq + ' days</td><td class="nw">' + fdate(s.last) + '</td><td class="nw">' + fdate(due) + '</td><td>' +
+      (late ? pill('Overdue by ' + Math.ceil((now() - due) / DAY) + ' days', 'bad') : soon ? pill('Due within 7 days', 'warn') : pill('On schedule', 'ok')) + '</td></tr>';
+  });
+  return h + '</table></div>';
+};
+R.licence = function () {
+  var list = ui.role === 'operator' ? [opById(ui.op)] : OPERATORS;
+  var h = '<h2 class="page">' + (ui.role === 'operator' ? 'Licence' : 'Licence register') + '</h2><p class="lead">Licence numbers, dates and conditions are demonstration values. Real records come from the licences issued to each operator.</p>';
+  list.forEach(function (o) {
+    var lic = licStatus(o);
+    h += '<div class="card mt"><h3>' + esc(o.company) + ' (' + esc(o.name) + ') ' + lic.p + '</h3><dl class="kv small"><dt>Licence number</dt><dd>' + esc(o.licence.no) + '</dd><dt>Type</dt><dd>' + esc(o.licence.type) + '</dd><dt>Issued</dt><dd>' + fdate(S.created + o.licence.issued * DAY) + '</dd><dt>Expires</dt><dd>' + fdate(lic.exp) + '</dd><dt>Site</dt><dd>' + esc(o.town) + ', ' + o.lat.toFixed(2) + ', ' + o.lon.toFixed(2) + ' (demonstration)</dd><dt>Receiving water</dt><dd>' + esc(o.river) + '</dd><dt>Monitoring points</dt><dd>' +
+      POINTS.map(function (p) { return esc(p.code + ' ' + p.name); }).join('; ') + '</dd></dl><h3 class="mt">Conditions</h3><ol>' + o.licence.conditions.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ol></div>';
+  });
+  return h;
+};
+R.limits = function () {
+  var edit = ui.role === 'inspector';
+  var h = '<h2 class="page">Limit register</h2><div class="note"><b>Demonstration limits only.</b> The limits are demonstration values. Real use needs the licence conditions and current ZEMA standards.</div>';
+  h += '<p class="lead">' + (edit ? 'Edit any limit, or add a parameter such as a heavy metal. New parameters are laboratory parameters and appear at once in the laboratory result form. Results outside a limit are flagged and raise an action.' : 'Limits are set by the regulator. Switch the role to ZEMA inspector to add a parameter or change a limit.') + '</p>';
+  if (edit) { h += '<div class="bar no-print"><button class="btn" data-open="param">Add a parameter</button></div>'; }
+  h += '<div class="card"><table><tr><th>Parameter</th><th>Group</th><th>Measured by</th><th>Unit</th><th>Minimum</th><th>Maximum</th>' + (edit ? '<th class="no-print"></th>' : '') + '</tr>';
+  S.params.forEach(function (p) {
+    var inp = function (side) { var v = p[side]; return edit ? '<input type="number" step="any" style="width:100px" data-limit="' + p.id + ':' + side + '" value="' + (v === null ? '' : v) + '" placeholder="none" aria-label="' + esc(p.label + ' ' + side) + '">' : (v === null ? '<span class="muted">none</span>' : v); };
+    h += '<tr><td>' + esc(p.label) + (p.custom ? ' ' + pill('Added', 'neutral') : '') + '</td><td>' + esc(p.group) + '</td><td>' + (p.kind === 'live' ? 'Live probe' : 'Laboratory') + '</td><td>' + esc(p.unit || 'none') + '</td><td>' + inp('min') + '</td><td>' + inp('max') + '</td>' + (edit ? '<td class="no-print">' + (p.custom ? '<button class="btn small alt" data-delparam="' + p.id + '">Remove</button>' : '') + '</td>' : '') + '</tr>';
+  });
+  return h + '</table></div>';
+};
+R.log = function () {
+  var list = applyF('log', S.log, function (r) { return r.role; }, function (r) { return r.name + ' ' + r.text + ' ' + opName(r.op); });
+  var h = '<h2 class="page">Activity log</h2><p class="lead">Every submission, upload, action and decision with its time stamp, for audit.</p>' + filterBar('log', ['operator', 'inspector', 'community', 'system'], ui.role === 'inspector') + '</div><div class="card"><table><tr><th>Time</th><th>Who</th><th>Operator</th><th>Activity</th></tr>';
+  list.slice(0, 300).forEach(function (r) { h += '<tr><td class="nw">' + ftime(r.t) + '</td><td>' + esc(r.name) + '<div class="small muted">' + esc(r.role) + '</div></td><td>' + esc(r.op ? opName(r.op) : '') + '</td><td>' + esc(r.text) + '</td></tr>'; });
+  return h + '</table></div>';
+};
+R.concern = function () {
+  return '<h2 class="page">Report a pollution concern</h2><p class="lead">Tell the regulator about water that looks or smells unusual, dead fish, spills or dust. Your name and contact are optional.</p><div class="card" style="max-width:720px">' + concernForm() + '</div>';
+};
+function concernForm() {
+  return '<form id="f-concern"><div class="form-grid"><div class="form-row"><label>Your name (optional)</label><input type="text" name="name"></div><div class="form-row"><label>Phone or email (optional)</label><input type="text" name="contact"></div></div>' +
+    '<div class="form-row"><label>Where did you see it</label><input type="text" name="location" required style="width:100%"></div><div class="form-row"><label>Nearest mine, if known</label><select name="op"><option value="">Not sure</option>' + OPERATORS.map(function (o) { return '<option value="' + o.id + '">' + esc(o.name + ', ' + o.town) + '</option>'; }).join('') + '</select></div>' +
+    '<div class="form-row"><label>What did you see</label><textarea name="desc" rows="4" required></textarea></div><div class="form-row"><label>Photos (optional, up to 3)</label><input type="file" name="photos" accept="image/*" multiple></div><div class="err" id="err-concern"></div><div class="form-actions"><button class="btn" type="submit">Send to the regulator</button></div></form>';
+}
+R.report = function () {
+  var op = opById(ui.role === 'operator' ? ui.op : ui.repOp), st = opStats(op.id), lic = licStatus(op);
+  var h = '<div class="bar no-print">' + (ui.role === 'inspector' ? '<select id="rep-op">' + OPERATORS.map(function (o) { return '<option value="' + o.id + '"' + (o.id === op.id ? ' selected' : '') + '>' + esc(o.name) + '</option>'; }).join('') + '</select>' : '') + '<button class="btn" id="print-btn">Print or save as PDF</button></div>';
+  h += '<div class="report"><h2>Environmental compliance report</h2><div class="muted">' + esc(op.company) + ' (' + esc(op.name) + '), ' + esc(op.town) + '. Licence ' + esc(op.licence.no) + ', ' + lic.p.replace(/<[^>]+>/g, '') + '.</div><div class="muted">Prepared ' + ftime(now()) + ' by ' + esc(who(user())) + '. Demonstration data only.</div>';
+  h += '<h3>Summary</h3><p>Live readings within limits in the recent window: ' + score(op.id).toFixed(1) + '%. Open items: ' + st.open + ', of which ' + st.overdue + ' overdue. Overdue laboratory samples: ' + st.schedOver + '. Open incidents: ' + st.incidents + '.</p>';
+  h += '<h3>Live monitoring this session</h3><table><tr><th>Point</th><th>Parameter</th><th>Limit</th><th>Readings</th><th>Minimum</th><th>Mean</th><th>Maximum</th><th>Breaches</th></tr>';
+  POINTS.forEach(function (pt) { pt.live.forEach(function (pm) { var s = series[skey(op.id, pt.id, pm)], p = param(pm); h += '<tr><td>' + esc(pt.name) + '</td><td>' + esc(p.label) + '</td><td>' + esc(limitText(p)) + '</td><td>' + s.n + '</td><td>' + (s.n ? s.min.toFixed(p.dec) : '') + '</td><td>' + (s.n ? (s.sum / s.n).toFixed(p.dec) : '') + '</td><td>' + (s.n ? s.max.toFixed(p.dec) : '') + '</td><td>' + s.exceed + '</td></tr>'; }); });
+  h += '</table><h3>Laboratory results</h3><table><tr><th>Reference</th><th>Point</th><th>Sampled</th><th>Breaches</th><th>Status</th></tr>';
+  S.results.filter(function (r) { return r.op === op.id; }).forEach(function (r) { h += '<tr><td>' + esc(r.id) + '</td><td>' + esc(ptName(r.point)) + '</td><td>' + fdate(r.sampled) + '</td><td>' + (r.breaches.length ? r.breaches.map(function (b) { return esc(param(b) ? param(b).label : b); }).join(', ') : 'None') + '</td><td>' + esc(r.status) + '</td></tr>'; });
+  h += '</table><h3>Actions</h3>' + itemsTable(S.items.filter(function (it) { return it.op === op.id; }).slice(0, 60), false).replace(/<button[^>]*>[^<]*<\/button>/g, '');
+  h += '<h3>Reports register</h3><table><tr><th>Reference</th><th>Title</th><th>Uploaded</th><th>Status</th></tr>';
+  S.docs.filter(function (r) { return r.op === op.id; }).forEach(function (r) { h += '<tr><td>' + esc(r.id) + '</td><td>' + esc(r.title) + '</td><td>' + ftime(r.t) + '</td><td>' + esc(r.status) + '</td></tr>'; });
+  return h + '</table></div>';
+};
+
+/* ---------------- modals and forms ---------------- */
+function openModal(title, body) { $('modal-title').textContent = title; $('modal-body').innerHTML = body; $('modal-bg').classList.add('open'); var f = $('modal-body').querySelector('input,select,textarea'); if (f) { f.focus(); } }
+function closeModal() { $('modal-bg').classList.remove('open'); $('modal-body').innerHTML = ''; }
+function opSelect(name, val) { return '<select name="' + name + '" required>' + OPERATORS.map(function (o) { return '<option value="' + o.id + '"' + (o.id === val ? ' selected' : '') + '>' + esc(o.name + ', ' + o.town) + '</option>'; }).join('') + '</select>'; }
+function ptSelect(name, val) { return '<select name="' + name + '" required>' + POINTS.map(function (p) { return '<option value="' + p.id + '"' + (p.id === val ? ' selected' : '') + '>' + esc(p.code + ' ' + p.name) + '</option>'; }).join('') + '</select>'; }
+function row(label, input) { return '<div class="form-row"><label>' + esc(label) + '</label>' + input + '</div>'; }
+function actionsFooter(label) { return '<div class="err" id="ferr"></div><div class="form-actions"><button type="button" class="btn alt" data-cancel="1">Cancel</button><button type="submit" class="btn">' + esc(label) + '</button></div>'; }
+
+var FORMS = {
+  profile: function () {
+    var p = S.profiles[ui.role] || {};
+    var b = '<form id="mf" data-kind="profile"><p class="muted">These details are stamped on every record you create. Saved in this browser only.</p>' + row('Full name', '<input type="text" name="name" required style="width:100%" value="' + esc(p.name || '') + '">');
+    b += ui.role === 'inspector' ? '<div class="form-grid">' + row('Position', '<input type="text" name="position" value="' + esc(p.position || 'Inspector') + '">') + row('Staff number', '<input type="text" name="staff" required value="' + esc(p.staff || '') + '">') + '</div>' : row('Position', '<input type="text" name="position" required value="' + esc(p.position || '') + '">');
+    return ['Your details', b + actionsFooter('Save')];
+  },
+  lab: function () {
+    var b = '<form id="mf" data-kind="lab"><div class="form-grid">' + row('Monitoring point', ptSelect('point', 'out')) + row('Laboratory name', '<input type="text" name="lab" required>') + row('Laboratory accreditation', '<select name="accr"><option>Accredited</option><option>Accreditation pending</option><option>Not accredited</option></select>') + row('Sample ID', '<input type="text" name="sampleId" required>') +
+      row('Date sampled', '<input type="date" name="sampled" required value="' + isoDate(now() - 3 * DAY) + '">') + row('Date analysed', '<input type="date" name="analysed" required value="' + isoDate(now()) + '">') + '</div>' + row('Method', '<input type="text" name="method" style="width:100%" placeholder="For example ICP-OES">');
+    b += '<p class="small muted">Enter the results you have. Leave a box empty if the parameter was not tested. Values are checked against the limit register when you submit.</p><table><tr><th>Parameter</th><th>Limit</th><th>Result</th></tr>';
+    params('lab').forEach(function (p) { b += '<tr><td>' + esc(p.label) + '</td><td class="small nw">' + esc(limitText(p)) + '</td><td><input type="number" step="any" name="v_' + p.id + '" style="width:120px"> ' + esc(p.unit) + '</td></tr>'; });
+    return ['Enter laboratory result, ' + opName(ui.op), b + '</table>' + actionsFooter('Submit and check against limits')];
+  },
+  'doc-op': function () {
+    return ['Upload a report, ' + opName(ui.op), '<form id="mf" data-kind="doc"><div class="form-grid">' + row('Report type', '<select name="type">' + DOC_TYPES.operator.map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '</select>') + row('Period covered', '<input type="text" name="period" required placeholder="For example November 2026">') + '</div>' +
+      row('Title', '<input type="text" name="title" required style="width:100%">') + row('Notes (optional)', '<textarea name="notes" rows="2"></textarea>') + row('File (PDF, Word or Excel, up to 2 MB)', '<input type="file" name="file">') + actionsFooter('Upload')];
+  },
+  'doc-ins': function () {
+    return ['Upload a regulator report', '<form id="mf" data-kind="doc"><div class="form-grid">' + row('Operator', opSelect('op', 'c')) + row('Report type', '<select name="type">' + DOC_TYPES.inspector.map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '</select>') + '</div>' +
+      row('Title', '<input type="text" name="title" required style="width:100%">') + '<div class="form-grid">' + row('Period covered', '<input type="text" name="period" required>') + row('Days allowed for required actions', '<input type="number" name="dueDays" value="14" min="1">') + '</div>' +
+      row('Required actions for the operator, one per line (optional)', '<textarea name="suggestions" rows="3"></textarea>') + row('Notes (optional)', '<textarea name="notes" rows="2"></textarea>') + row('File (up to 2 MB)', '<input type="file" name="file">') + actionsFooter('Upload and issue')];
+  },
+  inspection: function () {
+    return ['Record an inspection', '<form id="mf" data-kind="inspection"><div class="form-grid">' + row('Operator', opSelect('op', 'c')) + row('Date of visit', '<input type="date" name="date" required value="' + isoDate(now()) + '">') + '</div>' +
+      row('Findings', '<textarea name="findings" rows="4" required></textarea>') + row('Required actions for the operator, one per line', '<textarea name="suggestions" rows="3"></textarea>') + '<div class="form-grid">' + row('Days allowed for actions', '<input type="number" name="dueDays" value="14" min="1">') + row('Photos (up to 3)', '<input type="file" name="photos" accept="image/*" multiple>') + '</div>' +
+      row('Inspection report file (optional, up to 2 MB)', '<input type="file" name="file">') + actionsFooter('Save inspection')];
+  },
+  notice: function () {
+    return ['Issue a notice or compliance order', '<form id="mf" data-kind="notice"><div class="form-grid">' + row('Operator', opSelect('op', 'c')) + row('Type', '<select name="type"><option>Compliance notice</option><option>Compliance order</option><option>Warning letter</option></select>') + '</div>' +
+      row('Required action', '<textarea name="text" rows="3" required></textarea>') + row('Deadline', '<input type="date" name="deadline" required value="' + isoDate(now() + 14 * DAY) + '">') + actionsFooter('Issue')];
+  },
+  incident: function () {
+    return ['Report an incident, ' + opName(ui.op), '<form id="mf" data-kind="incident"><div class="form-grid">' + row('Type', '<select name="kind">' + INCIDENT_TYPES.map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '</select>') + row('Location', ptSelect('point', 'dam')) + '</div>' +
+      row('When it happened', '<input type="datetime-local" name="occurred" required value="' + isoLocal(now()) + '">') + row('What happened', '<textarea name="desc" rows="3" required></textarea>') + row('Immediate action taken', '<textarea name="immediate" rows="2" required></textarea>') + row('Photos (up to 3)', '<input type="file" name="photos" accept="image/*" multiple>') + actionsFooter('Report now')];
+  },
+  param: function () {
+    return ['Add a parameter', '<form id="mf" data-kind="param"><div class="form-grid">' + row('Parameter name', '<input type="text" name="label" required placeholder="For example Nickel">') + row('Group', '<select name="group">' + PARAM_GROUPS.map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '</select>') +
+      row('Unit', '<input type="text" name="unit" value="mg/L">') + row('Decimal places shown', '<input type="number" name="dec" value="3" min="0" max="4">') + row('Minimum (optional)', '<input type="number" step="any" name="min">') + row('Maximum (optional)', '<input type="number" step="any" name="max">') + '</div><p class="small muted">The parameter is added as a laboratory parameter. Enter at least one limit so results can be checked.</p>' + actionsFooter('Add parameter')];
+  }
+};
+function itemForm(kind, it) {
+  if (kind === 'act') { return ['Log corrective action, ' + it.id, '<form id="mf" data-kind="act" data-id="' + it.id + '"><p class="small">' + esc(it.text) + '</p>' + row('Action taken', '<textarea name="text" rows="3" required></textarea>') + row('Supporting file (optional, up to 2 MB)', '<input type="file" name="file">') + actionsFooter('Save action')]; }
+  if (kind === 'due') { return ['Change due date, ' + it.id, '<form id="mf" data-kind="due" data-id="' + it.id + '">' + row('New due date', '<input type="date" name="due" required value="' + isoDate(it.due) + '">') + row('Reason', '<input type="text" name="reason" required style="width:100%">') + actionsFooter('Save')]; }
+  if (kind === 'reopen') { return ['Query action, ' + it.id, '<form id="mf" data-kind="reopen" data-id="' + it.id + '">' + row('What is missing or unclear', '<textarea name="text" rows="3" required></textarea>') + actionsFooter('Send query')]; }
+}
+function reviewForm(kind, id, opts) {
+  return ['Review ' + id, '<form id="mf" data-kind="' + kind + '" data-id="' + id + '">' + (opts ? row('Decision', '<select name="status">' + opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + '</select>') : '') + row('Comment', '<textarea name="comment" rows="3"' + (kind === 'query' ? ' required' : '') + '></textarea>') + actionsFooter('Save')];
+}
+
+function readFile(file) {
+  return new Promise(function (res, rej) {
+    if (!file) { return res(null); }
+    if (file.size > CONFIG.maxFileBytes) { return rej(new Error(file.name + ' is larger than 2 MB. Reduce the file size or attach a smaller summary.')); }
+    var r = new FileReader(); r.onload = function () { res({ name: file.name, size: file.size, type: file.type, data: r.result }); }; r.onerror = function () { rej(new Error('Could not read ' + file.name)); }; r.readAsDataURL(file);
+  });
+}
+function readPhotos(list) {
+  var files = Array.prototype.slice.call(list || [], 0, 3);
+  return Promise.all(files.map(function (f) {
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { var img = new Image(); img.onload = function () { var m = 800, sc = Math.min(1, m / Math.max(img.width, img.height)); var c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.7)); }; img.onerror = function () { rej(new Error(f.name + ' is not a readable image')); }; img.src = r.result; };
+      r.readAsDataURL(f);
+    });
+  }));
+}
+function lines(v) { return String(v || '').split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean); }
+
+function submitForm(f) {
+  var kind = f.getAttribute('data-kind'), id = f.getAttribute('data-id'), u = user(), t = now(), v = function (n) { var e = f.elements[n]; return e ? e.value.trim() : ''; };
+  var err = function (m) { $('ferr').textContent = m; };
+  var done = function () { save(); closeModal(); render(); };
+  if (kind === 'profile') { S.profiles[ui.role] = { name: v('name'), position: v('position'), staff: v('staff') }; logAct(user(), '', 'Updated user details'); return done(); }
+  if (ui.role !== 'community' && !(S.profiles[ui.role] && S.profiles[ui.role].name)) { return err('Add your name first with the Your details button at the top.'); }
+  if (kind === 'lab') {
+    var vals = {}, n = 0;
+    params('lab').forEach(function (p) { var x = v('v_' + p.id); if (x !== '') { vals[p.id] = parseFloat(x); n += 1; } });
+    if (!n) { return err('Enter at least one result.'); }
+    var sd = parseDate(v('sampled')), ad = parseDate(v('analysed'));
+    if (ad < sd) { return err('The analysis date cannot be before the sampling date.'); }
+    var rec = api.addResult({ op: ui.op, point: v('point'), lab: v('lab'), accr: v('accr'), sampleId: v('sampleId'), sampled: sd, analysed: ad, method: v('method') || 'Not stated', values: vals }, u, t);
+    ui.tab = 'lab'; done();
+    if (rec.breaches.length) { flash(rec.breaches.length + ' result(s) above or below the limit. An action with a due date was created in the Actions tab.'); } else { flash('All results within limits.'); }
+    return;
+  }
+  if (kind === 'doc' || kind === 'inspection' || kind === 'act') {
+    var fileEl = f.elements.file, photoEl = f.elements.photos;
+    Promise.all([readFile(fileEl && fileEl.files[0]), readPhotos(photoEl && photoEl.files)]).then(function (res) {
+      if (kind === 'doc') {
+        api.addDoc({ op: ui.role === 'operator' ? ui.op : v('op'), role: ui.role, title: v('title'), type: v('type'), period: v('period'), notes: v('notes'), file: res[0], suggestions: lines(v('suggestions')), dueDays: parseInt(v('dueDays'), 10) || 14 }, u, t);
+      } else if (kind === 'inspection') {
+        api.addInspection({ op: v('op'), date: parseDate(v('date')), findings: v('findings'), suggestions: lines(v('suggestions')), dueDays: parseInt(v('dueDays'), 10) || 14, photos: res[1], file: res[0] }, u, t);
+      } else {
+        var it = itemById(id); it.status = 'Action logged'; it.action = v('text') + (res[0] ? ' [file: ' + res[0].name + ']' : ''); it.actionAt = t; it.actionBy = who(u); if (!it.ackAt) { it.ackAt = t; it.ackBy = who(u); }
+        if (res[0]) { it.file = res[0]; }
+        logAct(u, it.op, 'Logged corrective action on ' + it.id + ': ' + v('text'));
+        if (it.origin === 'Live reading' && !it.active) { closeItem(it, { role: 'system', name: 'Monitoring system' }, 'Readings back within range after the logged action'); rebuildOpenLive(); }
+      }
+      done();
+    }).catch(function (e) { err(e.message); });
+    return;
+  }
+  if (kind === 'notice') { api.addNotice({ op: v('op'), type: v('type'), text: v('text'), deadline: parseDate(v('deadline')) }, u, t); ui.tab = 'notices'; return done(); }
+  if (kind === 'incident') {
+    readPhotos(f.elements.photos.files).then(function (ph) { api.addIncident({ op: ui.op, point: v('point'), kind: v('kind'), occurred: parseDate(v('occurred')), desc: v('desc'), immediate: v('immediate'), photos: ph }, u, t); ui.tab = 'incidents'; done(); flash('Incident reported. The regulator sees it at once.'); }).catch(function (e) { err(e.message); });
+    return;
+  }
+  if (kind === 'param') {
+    var mn = v('min') === '' ? null : parseFloat(v('min')), mx = v('max') === '' ? null : parseFloat(v('max'));
+    if (mn === null && mx === null) { return err('Enter a minimum, a maximum or both.'); }
+    if (mn !== null && mx !== null && mn > mx) { return err('The minimum is larger than the maximum.'); }
+    var label = v('label'), pid = 'x' + label.toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 12) + S.seq;
+    if (S.params.some(function (p) { return p.label.toLowerCase() === label.toLowerCase(); })) { return err('A parameter with this name already exists.'); }
+    S.params.push({ id: pid, label: label, unit: v('unit'), min: mn, max: mx, dec: Math.max(0, Math.min(4, parseInt(v('dec'), 10) || 0)), kind: 'lab', group: v('group'), custom: true });
+    S.seq += 1;
+    logAct(u, '', 'Added parameter ' + label + ' (' + v('group') + '), limit ' + limitText(param(pid)));
+    return done();
+  }
+  if (kind === 'due') { var it2 = itemById(id), old = it2.due; it2.due = parseDate(v('due')); logAct(u, it2.op, 'Changed due date of ' + id + ' from ' + fdate(old) + ' to ' + fdate(it2.due) + ': ' + v('reason')); return done(); }
+  if (kind === 'reopen') { var it3 = itemById(id); it3.status = 'Acknowledged'; it3.action += ' [Queried by regulator: ' + v('text') + ']'; logAct(u, it3.op, 'Queried action on ' + id + ': ' + v('text')); return done(); }
+  if (kind === 'verify' || kind === 'query') {
+    var r = S.results.filter(function (x) { return x.id === id; })[0]; r.status = kind === 'verify' ? 'Verified' : 'Queried'; r.comment = v('comment'); r.reviewBy = who(u); r.reviewAt = t;
+    logAct(u, r.op, r.status + ' laboratory result ' + id + (r.comment ? ': ' + r.comment : '')); return done();
+  }
+  if (kind === 'review') {
+    var d = S.docs.filter(function (x) { return x.id === id; })[0]; d.status = v('status'); d.comment = v('comment'); d.reviewBy = who(u); d.reviewAt = t;
+    logAct(u, d.op, 'Marked report ' + id + ' as ' + d.status.toLowerCase() + (d.comment ? ': ' + d.comment : '')); return done();
+  }
+  if (kind === 'incack') {
+    var inc = S.incidents.filter(function (x) { return x.id === id; })[0]; inc.status = inc.status === 'Reported' ? 'Acknowledged' : 'Closed'; inc.note = v('comment'); inc.ackBy = who(u); inc.ackAt = t;
+    logAct(u, inc.op, inc.status + ' incident ' + id + (inc.note ? ': ' + inc.note : '')); return done();
+  }
+  if (kind === 'cmp') {
+    var c = S.complaints.filter(function (x) { return x.id === id; })[0]; c.status = v('status'); c.note = v('comment'); c.noteBy = who(u); c.noteAt = t;
+    logAct(u, c.op, 'Updated community concern ' + id + ' to ' + c.status.toLowerCase() + (c.note ? ': ' + c.note : '')); return done();
+  }
+}
+function flash(m) { var el = $('flash'); el.textContent = m; el.style.display = 'block'; clearTimeout(flash.t); flash.t = setTimeout(function () { el.style.display = 'none'; }, 6000); }
+
+/* ---------------- export ---------------- */
+function csvCell(x) { return '"' + String(x == null ? '' : x).replace(/"/g, '""') + '"'; }
+function download(name, text, type) { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: type })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+function exportCsv(which) {
+  var rows = [], d = isoDate(now());
+  if (which === 'actions') { rows.push(['Reference', 'Operator', 'Raised', 'Source', 'Level', 'Description', 'Due', 'Status', 'Overdue', 'Action taken', 'Action by', 'Closed']); S.items.forEach(function (i) { rows.push([i.id, opName(i.op), ftime(i.t), i.origin, i.noticeType || i.level, i.text, fdate(i.due), i.status, overdue(i) ? 'Yes' : 'No', i.action, i.actionBy, ftime(i.closedAt)]); }); }
+  if (which === 'lab') { var ps = params('lab'); rows.push(['Reference', 'Operator', 'Point', 'Laboratory', 'Accreditation', 'Sample ID', 'Sampled', 'Analysed', 'Status'].concat(ps.map(function (p) { return p.label + (p.unit ? ' (' + p.unit + ')' : ''); })).concat(['Breaches'])); S.results.forEach(function (r) { rows.push([r.id, opName(r.op), ptName(r.point), r.lab, r.accr, r.sampleId, fdate(r.sampled), fdate(r.analysed), r.status].concat(ps.map(function (p) { return r.values[p.id] == null ? '' : r.values[p.id]; })).concat([r.breaches.map(function (b) { return param(b) ? param(b).label : b; }).join('; ')])); }); }
+  if (which === 'docs') { rows.push(['Reference', 'Operator', 'From', 'Type', 'Title', 'Period', 'Uploaded', 'Uploaded by', 'File', 'Status', 'Review comment']); S.docs.forEach(function (r) { rows.push([r.id, opName(r.op), r.role, r.type, r.title, r.period, ftime(r.t), r.by, r.file ? r.file.name : '', r.status, r.comment]); }); }
+  if (which === 'log') { rows.push(['Time', 'Role', 'Who', 'Operator', 'Activity']); S.log.forEach(function (r) { rows.push([ftime(r.t), r.role, r.name, r.op ? opName(r.op) : '', r.text]); }); }
+  download('ecm-' + which + '-' + d + '.csv', rows.map(function (r) { return r.map(csvCell).join(','); }).join('\n'), 'text/csv');
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener('click', function (e) {
+  var t = e.target, a;
+  if (t.closest && t.closest('tr[data-series]')) { ui.sel = t.closest('tr[data-series]').getAttribute('data-series'); render(); return; }
+  if (t.getAttribute('data-cancel')) { closeModal(); return; }
+  if (t.id === 'modal-bg') { closeModal(); return; }
+  var tab = t.closest && t.closest('#tabs button'); if (tab) { ui.tab = tab.getAttribute('data-tab'); render(); window.scrollTo(0, 0); return; }
+  if ((a = t.getAttribute('data-open'))) { var fm = FORMS[a](); openModal(fm[0], fm[1]); return; }
+  if ((a = t.getAttribute('data-ack'))) { var it = itemById(a); it.status = 'Acknowledged'; it.ackAt = now(); it.ackBy = who(user()); logAct(user(), it.op, 'Acknowledged ' + a); save(); render(); return; }
+  if ((a = t.getAttribute('data-act'))) { var f1 = itemForm('act', itemById(a)); openModal(f1[0], f1[1]); return; }
+  if ((a = t.getAttribute('data-due'))) { var f2 = itemForm('due', itemById(a)); openModal(f2[0], f2[1]); return; }
+  if ((a = t.getAttribute('data-reopen'))) { var f3 = itemForm('reopen', itemById(a)); openModal(f3[0], f3[1]); return; }
+  if ((a = t.getAttribute('data-close'))) { closeItem(itemById(a), user(), 'Accepted by the regulator'); save(); render(); return; }
+  if ((a = t.getAttribute('data-verify'))) { var f4 = reviewForm('verify', a); openModal(f4[0], f4[1]); return; }
+  if ((a = t.getAttribute('data-query'))) { var f5 = reviewForm('query', a); openModal(f5[0], f5[1]); return; }
+  if ((a = t.getAttribute('data-review'))) { var f6 = reviewForm('review', a, ['Under review', 'Accepted', 'Queried']); openModal(f6[0], f6[1]); return; }
+  if ((a = t.getAttribute('data-incack'))) { var f7 = reviewForm('incack', a); openModal(f7[0], f7[1]); return; }
+  if ((a = t.getAttribute('data-cmp'))) { var f8 = reviewForm('cmp', a, ['Under investigation', 'Resolved']); openModal(f8[0], f8[1]); return; }
+  if ((a = t.getAttribute('data-delparam'))) { var p = param(a); if (p) { S.params = S.params.filter(function (x) { return x.id !== a; }); logAct(user(), '', 'Removed parameter ' + p.label); save(); render(); } return; }
+  if ((a = t.getAttribute('data-export'))) { exportCsv(a); return; }
+  if (t.id === 'pause-btn') { ui.paused = !ui.paused; render(); return; }
+  if (t.id === 'breach-btn') { var list = Object.keys(series).filter(function (k) { return series[k].op === ui.op && series[k].point === 'out'; }); var s = series[list[Math.floor(rnd() * list.length)]]; startSpike(s); ui.sel = skey(s.op, s.point, s.param); flash('A breach is being simulated on ' + param(s.param).label + ' at the final effluent outlet. Watch the chart.'); render(); return; }
+  if (t.id === 'print-btn') { window.print(); return; }
+  if (t.id === 'profile-btn') { var f9 = FORMS.profile(); openModal(f9[0], f9[1]); return; }
+  if (t.id === 'data-btn') { openModal('Data and export', dataPanel()); return; }
+  if (t.id === 'backup-btn') { download('ecm-backup-' + isoDate(now()) + '.json', JSON.stringify(S), 'application/json'); return; }
+  if (t.id === 'reset-btn') { if ($('reset-confirm').value.trim().toUpperCase() === 'RESET') { try { localStorage.removeItem(CONFIG.storageKey); } catch (x) { /* ignore */ } start(true); closeModal(); flash('Demonstration data reset.'); } else { $('ferr').textContent = 'Type RESET in the box to confirm.'; } return; }
+});
+document.addEventListener('submit', function (e) {
+  e.preventDefault();
+  var f = e.target;
+  if (f.id === 'f-concern') {
+    var v = function (n) { return f.elements[n].value.trim(); };
+    readPhotos(f.elements.photos.files).then(function (ph) { var r = api.addComplaint({ name: v('name'), contact: v('contact'), op: v('op'), location: v('location'), desc: v('desc'), photos: ph }, now()); save(); render(); flash('Thank you. Your concern was sent with reference ' + r.id + '.'); }).catch(function (x) { $('err-concern').textContent = x.message; });
+    return;
+  }
+  if (f.id === 'mf') { submitForm(f); }
+});
+document.addEventListener('change', function (e) {
+  var t = e.target, a;
+  if (t.id === 'role') {
+    ui.role = t.value; ui.tab = TABS[ui.role][0][0]; render();
+    if (ui.role !== 'community' && !(S.profiles[ui.role] && S.profiles[ui.role].name)) { var f = FORMS.profile(); openModal(f[0], f[1]); }
+    return;
+  }
+  if (t.id === 'op-select') { ui.op = t.value; ui.sel = ui.op + '|out|ec'; render(); return; }
+  if (t.id === 'rep-op') { ui.repOp = t.value; render(); return; }
+  if ((a = t.getAttribute('data-limit'))) {
+    var parts = a.split(':'), p = param(parts[0]), val = t.value === '' ? null : parseFloat(t.value), old = p[parts[1]];
+    if (val !== null && isNaN(val)) { return; }
+    p[parts[1]] = val; logAct(user(), '', 'Changed ' + parts[1] + 'imum of ' + p.label + ' from ' + (old === null ? 'none' : old) + ' to ' + (val === null ? 'none' : val)); save(); render(); return;
+  }
+  if ((a = t.getAttribute('data-f'))) { fstate(t.getAttribute('data-tab'))[a] = t.value; render(); return; }
+  if (t.id === 'restore-file') {
+    var file = t.files[0]; if (!file) { return; }
+    var r = new FileReader(); r.onload = function () { try { var d = JSON.parse(r.result); if (d.v !== 2 || !d.items) { throw new Error(); } S = d; rebuildOpenLive(); save(); closeModal(); render(); flash('Backup restored.'); } catch (x) { $('ferr').textContent = 'This file is not a backup from this prototype.'; } }; r.readAsText(file);
+  }
+});
+document.addEventListener('input', function (e) {
+  var t = e.target, a = t.getAttribute && t.getAttribute('data-f');
+  if (a === 'q') { var pos = t.selectionStart, tabName = t.getAttribute('data-tab'); fstate(tabName).q = t.value; render(); var el = document.querySelector('input[data-f="q"][data-tab="' + tabName + '"]'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }
+});
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeModal(); } });
+function dataPanel() {
+  return '<p>Export registers as CSV files for Excel, save a full backup, or restore a backup. A backup lets another computer load the same records.</p><div class="bar"><button class="btn alt" data-export="actions">Actions CSV</button><button class="btn alt" data-export="lab">Laboratory results CSV</button><button class="btn alt" data-export="docs">Reports register CSV</button><button class="btn alt" data-export="log">Activity log CSV</button></div>' +
+    '<div class="bar"><button class="btn" id="backup-btn">Save full backup</button><label class="btn alt" style="display:inline-block">Restore a backup <input type="file" id="restore-file" accept=".json,application/json" style="display:none"></label></div>' +
+    '<h3 class="mt">Reset demonstration</h3><p class="small muted">Deletes everything entered in this browser and reloads the sample records. Type RESET to confirm.</p><div class="bar"><input type="text" id="reset-confirm" size="10"><button class="btn warn" id="reset-btn">Reset demo</button></div><div class="err" id="ferr"></div><div class="form-actions"><button class="btn alt" data-cancel="1">Close</button></div>';
+}
+
+/* ---------------- start ---------------- */
+function start(fresh) {
+  var isNew = fresh ? (S = buildSeed(now()), true) : load();
+  if (isNew) { seedRecords(api, now()); }
+  rebuildOpenLive();
+  initSeries();
+  var t0 = now();
+  warmup = true;
+  for (var i = 60; i > 0; i--) { tick(t0 - i * CONFIG.tickMs); }
+  warmup = false;
+  OPERATORS.forEach(function (o) { windows[o.id] = []; });
+  Object.keys(series).forEach(function (k) { var s = series[k]; s.n = 0; s.sum = 0; s.min = Infinity; s.max = -Infinity; s.exceed = 0; s.warn = 0; });
+  save();
+  render();
+  if (!(S.profiles[ui.role] && S.profiles[ui.role].name)) { var pf = FORMS.profile(); openModal(pf[0], pf[1]); }
+}
+$('op-select').innerHTML = OPERATORS.map(function (o) { return '<option value="' + o.id + '">' + esc(o.name + ', ' + o.town) + '</option>'; }).join('');
+$('op-select').value = ui.op;
+start(false);
+setInterval(function () {
+  if (ui.paused) { $('clock').textContent = fclock(now()); return; }
+  dirty = false; tick(now());
+  if (dirty) { save(); }
+  if (document.querySelector('.modal-bg.open')) { $('clock').textContent = fclock(now()); return; }
+  var live = { dashboard: 1, overview: 1 };
+  if (live[ui.tab] || (dirty && (ui.tab === 'actions'))) { render(); } else { $('clock').textContent = fclock(now()); renderNav(); }
+}, CONFIG.tickMs);
+window.addEventListener('resize', function () { if (ui.tab === 'dashboard') { drawChart(); } });
 })();
 
-document.getElementById('fb').addEventListener('submit', function (ev) {
-  ev.preventDefault();
-  var q = ['Name and role', 'Sites needing attention clear', 'Acknowledge and action steps', 'Missing for real use', 'Confusing', 'Other'];
-  var t = 'Compliance monitor prototype v0.1 feedback\n' + new Date().toLocaleString('en-GB') + '\n\n' + q.map(function (x, i) { return x + ':\n' + document.getElementById('fb' + i).value + '\n'; }).join('\n');
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([t], { type: 'text/plain' }));
-  a.download = 'ecm-feedback.txt';
-  document.body.appendChild(a); a.click(); a.remove();
-  document.getElementById('fb-msg').textContent = 'Saved as ecm-feedback.txt in your Downloads folder. Email it to the project lead.';
-});
 </script>
 </body>
 </html>
