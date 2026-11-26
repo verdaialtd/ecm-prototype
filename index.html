@@ -117,6 +117,12 @@ body.signed-out main { max-width: none; padding: 0; }
 .auth-dev .auth-logos { margin: 8px 0; }
 body.signed-out footer.credit { display: none; }
 
+.field-mode { max-width: 560px; }
+.field-mode input[type=text], .field-mode input[type=number], .field-mode select, .field-mode textarea { width: 100%; font-size: 16px; padding: 10px; }
+.field-mode .btn { padding: 10px 16px; font-size: 15px; }
+.field-mode .field-submit { width: 100%; margin-top: 8px; }
+@media (max-width: 640px) { nav { overflow-x: auto; flex-wrap: nowrap; white-space: nowrap; } header .sub { display: none; } .kpis { grid-template-columns: 1fr 1fr; } }
+
 #flash { display: none; position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #1c2630; color: #fff; padding: 10px 16px; border-radius: 8px; z-index: 20; max-width: 90%; }
 </style>
 </head>
@@ -133,7 +139,7 @@ body.signed-out footer.credit { display: none; }
       <button class="badge link" id="data-btn">Data and export</button>
       <button class="badge link" id="signout-btn">Sign out</button>
     </span>
-    <span id="signed-out"><button class="badge link" data-auth="concern">Report a pollution concern</button></span>
+    <span id="signed-out"><button class="badge link" data-auth="public">Public compliance status</button> <button class="badge link" data-auth="concern">Report a pollution concern</button></span>
     <span class="badge" id="clock"></span>
   </div>
 </header>
@@ -285,7 +291,7 @@ function fclock(t) { var d = new Date(t); return pad(d.getHours()) + ':' + pad(d
 function isoDate(t) { var d = new Date(t); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
 function isoLocal(t) { var d = new Date(t); return isoDate(t) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
 function parseDate(v) { if (!v) { return null; } var t = Date.parse(v.length === 10 ? v + 'T12:00' : v); return isNaN(t) ? null : t; }
-function opById(id) { for (var i = 0; i < OPERATORS.length; i++) { if (OPERATORS[i].id === id) { return OPERATORS[i]; } } return null; }
+function opById(id) { for (var i = 0; i < OPERATORS.length; i++) { if (OPERATORS[i].id === id) { return OPERATORS[i]; } } var st = typeof S !== 'undefined' && S && S.sites ? S.sites.filter(function (x) { return x.id === id; })[0] : null; return st ? siteToOperator(st) : null; }
 function opName(id) { var o = opById(id); return o ? o.name : 'Not linked to an operator'; }
 function ptById(id) { for (var i = 0; i < POINTS.length; i++) { if (POINTS[i].id === id) { return POINTS[i]; } } return null; }
 function ptName(id) { var p = ptById(id); return p ? p.name : ''; }
@@ -332,6 +338,7 @@ function addItem(o, u, t) {
     closedAt: null, closedBy: '', active: !!o.active, inCount: 0, by: u ? who(u) : 'System', sample: !!o.sample, noticeType: o.noticeType || '', response: ''
   };
   S.items.unshift(it);
+  alertItem(it);
   return it;
 }
 function itemById(id) { for (var i = 0; i < S.items.length; i++) { if (S.items[i].id === id) { return S.items[i]; } } return null; }
@@ -349,7 +356,7 @@ var api = {
       method: r.method || 'Not stated', notes: r.notes || '', file: r.file || null, values: r.values, t: t, by: who(u), status: byRole === 'inspector' ? 'Recorded by ZEMA' : 'Submitted', comment: '', reviewBy: '', reviewAt: null, breaches: [], sample: !!sample };
     var origin = byRole === 'inspector' ? 'ZEMA sampling' : mode === 'Field' ? 'Field result' : 'Laboratory result';
     Object.keys(r.values).forEach(function (pid) {
-      var p = param(pid); if (!p) { return; }
+      var p = param(pid); if (!p) { return; } p = pfor(p, r.op);
       if (!within(p, r.values[pid])) {
         rec.breaches.push(pid);
         addItem({ op: r.op, origin: origin, level: 'Limit breach', point: r.point, param: pid, value: r.values[pid], link: rec.id,
@@ -390,6 +397,7 @@ var api = {
     var rec = { id: nextRef('INC'), op: o.op, point: o.point, kind: o.kind, occurred: o.occurred, desc: o.desc, immediate: o.immediate, photos: o.photos || [],
       t: t, by: who(u), status: 'Reported', ackBy: '', ackAt: null, note: '', sample: !!sample };
     S.incidents.unshift(rec);
+    if (!sample) { notify('Incident', o.op, 'Incident at ' + opName(o.op) + ': ' + o.kind, rec.id + ' at ' + ptName(o.point) + '. ' + o.desc + ' Immediate action: ' + o.immediate, ['SMS', 'Email'], ['zema']); }
     addItem({ op: o.op, origin: 'Incident', level: 'Required action', point: o.point, link: rec.id, text: 'Submit an investigation report for incident ' + rec.id + ' (' + o.kind.toLowerCase() + ')', due: t + CONFIG.dueDays.Incident * DAY, sample: sample }, null, t);
     logAct(u, o.op, 'Reported incident ' + rec.id + ': ' + o.kind, t);
     return rec;
@@ -398,6 +406,7 @@ var api = {
     var rec = { id: nextRef('CMP'), name: o.name || 'Anonymous', contact: o.contact || '', op: o.op || '', location: o.location, desc: o.desc, photos: o.photos || [], t: t,
       status: 'Received', note: '', noteBy: '', noteAt: null, sample: !!sample };
     S.complaints.unshift(rec);
+    if (!sample) { notify('Community concern', o.op || '', 'Community concern at ' + o.location, rec.id + ': ' + o.desc, ['SMS', 'Email'], ['zema']); }
     logAct({ role: 'community', name: rec.name }, o.op, 'Submitted community concern ' + rec.id + ' at ' + o.location, t);
     return rec;
   }
@@ -446,7 +455,7 @@ function nextVal(s, op) {
   return Math.round(v * 1000) / 1000;
 }
 function liveState(s, v) {
-  var p = param(s.param);
+  var p = pfor(param(s.param), s.op);
   if (!within(p, v)) { return 'breach'; }
   if (s.param === 'ec' && v > ptById(s.point).baseline * CONFIG.warnFactor) { return 'warn'; }
   return 'ok';
@@ -490,7 +499,7 @@ var dirty = false, warmup = false;
 function tick(t) {
   OPERATORS.forEach(function (op) {
     POINTS.forEach(function (pt) {
-      pt.live.forEach(function (pm) { var s = series[skey(op.id, pt.id, pm)]; ingest(s, nextVal(s, op), t); });
+      pt.live.forEach(function (pm) { if (!liveFeed(op.id, pt.id, pm)) { return; } var s = series[skey(op.id, pt.id, pm)]; if (s) { ingest(s, nextVal(s, op), t); } });
     });
   });
 }
@@ -512,8 +521,8 @@ function user() {
   return { role: a.role, name: a.name, position: a.position, staff: a.staff, op: a.op };
 }
 var TABS = {
-  operator: [['dashboard', 'Live dashboard'], ['lab', 'Monitoring results'], ['ai', 'AI insights'], ['actions', 'Actions'], ['docs', 'Reports'], ['incidents', 'Incidents'], ['notices', 'Notices'], ['schedule', 'Sampling schedule'], ['licence', 'Licence'], ['limits', 'Limit register'], ['report', 'Compliance report'], ['log', 'Activity log']],
-  inspector: [['overview', 'Overview'], ['actions', 'Actions'], ['lab', 'Monitoring results'], ['ai', 'AI insights'], ['docs', 'Reports'], ['inspections', 'Inspections'], ['notices', 'Notices'], ['incidents', 'Incidents'], ['complaints', 'Complaints'], ['schedule', 'Sampling schedule'], ['licence', 'Licences'], ['limits', 'Limit register'], ['report', 'Compliance report'], ['log', 'Activity log']],
+  operator: [['dashboard', 'Live dashboard'], ['lab', 'Monitoring results'], ['field', 'Field mode'], ['ai', 'AI insights'], ['twin', 'Site twin'], ['sensors', 'Sensors'], ['actions', 'Actions'], ['monthly', 'Monthly report'], ['docs', 'Reports'], ['incidents', 'Incidents'], ['notices', 'Notices'], ['schedule', 'Sampling schedule'], ['licence', 'Licence'], ['limits', 'Limit register'], ['report', 'Compliance report'], ['outbox', 'Alerts outbox'], ['log', 'Activity log']],
+  inspector: [['overview', 'Overview'], ['actions', 'Actions'], ['lab', 'Monitoring results'], ['field', 'Field mode'], ['ai', 'AI insights'], ['twin', 'Site twin'], ['sensors', 'Sensors'], ['monthly', 'Monthly report'], ['docs', 'Reports'], ['inspections', 'Inspections'], ['notices', 'Notices'], ['incidents', 'Incidents'], ['complaints', 'Complaints'], ['schedule', 'Sampling schedule'], ['licence', 'Licences'], ['limits', 'Limit register'], ['report', 'Compliance report'], ['outbox', 'Alerts outbox'], ['log', 'Activity log']],
   community: [['concern', 'Report a concern']]
 };
 
@@ -550,6 +559,7 @@ function render() {
   renderNav();
   var fn = R[ui.tab]; $('main').innerHTML = fn ? fn() : '';
   if (ui.tab === 'dashboard') { drawChart(); }
+  if (ui.prompt) { ui.prompt = false; attentionPrompt(); }
 }
 function counts() {
   var c = { actions: 0, notices: 0, incidents: 0, complaints: 0, lab: 0, docs: 0 };
@@ -566,7 +576,7 @@ function counts() {
   }
   return c;
 }
-function tabsFor(a) { var t = TABS[a.role].slice(); if (a.admin) { t.push(['accounts', 'User accounts']); t.push(['bin', 'Deleted records']); } return t; }
+function tabsFor(a) { var t = TABS[a.role].slice(); if (a.admin) { t.push(['onboarding', 'Operator onboarding']); t.push(['accounts', 'User accounts']); t.push(['bin', 'Deleted records']); } return t; }
 function renderNav() {
   var acct = currentAccount();
   $('signed-in').style.display = acct ? '' : 'none';
@@ -574,7 +584,9 @@ function renderNav() {
   if (!acct) { $('tabs').innerHTML = ''; $('tabs').style.display = 'none'; return; }
   $('tabs').style.display = '';
   var c = counts();
-  c.accounts = S.accounts.filter(function (x) { return x.status === 'Pending approval'; }).length;
+  c.accounts = S.accounts.filter(function (x) { return x.status === 'Pending approval' && !(siteById(x.op) && siteById(x.op).status === 'Onboarding'); }).length;
+  c.onboarding = S.sites.filter(function (x) { return x.status === 'Onboarding'; }).length;
+  c.sensors = S.devices.filter(function (d) { return ui.role === 'inspector' ? d.status === 'Pending ZEMA approval' : d.op === ui.op && (d.status === 'Approved, awaiting first data' || d.status === 'Offline'); }).length;
   $('tabs').innerHTML = tabsFor(acct).map(function (t) {
     var n = c[t[0]] || 0;
     return '<button data-tab="' + t[0] + '" class="' + (ui.tab === t[0] ? 'active' : '') + '">' + esc(t[1]) + (n ? '<span class="cnt">' + n + '</span>' : '') + '</button>';
@@ -610,15 +622,15 @@ var R = {};
 R.dashboard = function () {
   var op = opById(ui.op), st = opStats(op.id);
   var h = '<h2 class="page">' + esc(op.name) + ', ' + esc(op.town) + '</h2><p class="lead">' + esc(op.company) + '. Licence ' + esc(op.licence.no) + '. Live probe readings every 3 seconds (simulated).</p>';
-  h += '<div class="bar no-print"><button class="btn alt" id="pause-btn">' + (ui.paused ? 'Resume feed' : 'Pause feed') + '</button><button class="btn alt" id="breach-btn">Simulate a breach</button><button class="btn" data-open="lab">Submit monitoring results</button><button class="btn alt" data-go="ai">AI insights: ' + aiCount(op.id) + ' signal' + (aiCount(op.id) === 1 ? '' : 's') + '</button><button class="btn alt" data-open="incident">Report an incident</button></div>';
+  h += '<div class="bar no-print"><button class="btn alt" id="pause-btn">' + (ui.paused ? 'Resume feed' : 'Pause feed') + '</button><button class="btn alt" id="breach-btn">Simulate a breach</button><button class="btn" data-open="lab">Submit monitoring results</button><button class="btn alt" data-go="twin">Site twin</button><button class="btn alt" data-go="ai">AI insights: ' + aiCount(op.id) + ' signal' + (aiCount(op.id) === 1 ? '' : 's') + '</button><button class="btn alt" data-open="incident">Report an incident</button></div>';
   h += '<div class="kpis">' + kpi(score(op.id).toFixed(1) + '%', 'Live readings within limits, recent window') + kpi(st.warn, 'Open early warnings', st.warn > 0) + kpi(st.breach, 'Open limit breaches', st.breach > 0) + kpi(st.overdue, 'Overdue actions', st.overdue > 0) + kpi(st.schedOver, 'Overdue laboratory samples', st.schedOver > 0) + '</div>';
   h += '<div class="grid">';
   POINTS.forEach(function (pt) {
     h += '<div class="card"><h3>' + esc(pt.name) + ' <span class="muted small">' + esc(pt.code) + '</span></h3><table><tr><th>Parameter</th><th>Reading</th><th>Limit</th><th>Status</th></tr>';
     pt.live.forEach(function (pm) {
-      var s = series[skey(op.id, pt.id, pm)], p = param(pm), v = s.values[s.values.length - 1], k = skey(op.id, pt.id, pm);
-      var stp = s.state === 'breach' ? pill('Limit breach', 'bad') : s.state === 'warn' ? pill('Early warning', 'warn') : pill('Within limit', 'ok');
-      h += '<tr class="pick' + (ui.sel === k ? ' sel' : '') + '" data-series="' + k + '"><td>' + esc(p.label) + '</td><td class="nw">' + fmtVal(p, v) + '</td><td class="nw">' + esc(limitText(p)) + '</td><td>' + stp + '</td></tr>';
+      var s = series[skey(op.id, pt.id, pm)], p = pfor(param(pm), op.id), v = s.values[s.values.length - 1], k = skey(op.id, pt.id, pm), on = liveFeed(op.id, pt.id, pm), hh = health(op.id, pt.id, pm);
+      var stp = !on ? pill(hh.t, hh.c) : s.state === 'breach' ? pill('Limit breach', 'bad') : s.state === 'warn' ? pill('Early warning', 'warn') : pill('Within limit', 'ok');
+      h += '<tr class="pick' + (ui.sel === k ? ' sel' : '') + '" data-series="' + k + '"><td>' + esc(p.label) + '</td><td class="nw">' + (on ? fmtVal(p, v) : '<span class="muted">No data</span>') + '</td><td class="nw">' + esc(limitText(p)) + '</td><td>' + stp + '</td></tr>';
     });
     h += '</table></div>';
   });
@@ -731,11 +743,11 @@ R.lab = function () {
     h += '<dl class="kv small"><dt>Reported by</dt><dd>' + (ins ? 'ZEMA inspector (independent check)' : 'Operator') + '</dd>' +
       (mode === 'Field' ? '<dt>Instrument</dt><dd>' + esc(r.instrument) + (r.calib ? ', calibrated ' + fdate(r.calib) : '') + '</dd><dt>Field sheet or sample ID</dt><dd>' + esc(r.sampleId) + '</dd><dt>Measured</dt><dd>' + fdate(r.sampled) + '</dd>'
         : '<dt>Laboratory</dt><dd>' + esc(r.lab) + ', ' + esc(r.accr) + '</dd><dt>Sample ID</dt><dd>' + esc(r.sampleId) + '</dd><dt>Sampled and analysed</dt><dd>' + fdate(r.sampled) + ', ' + fdate(r.analysed) + '</dd>') +
-      '<dt>Method</dt><dd>' + esc(r.method) + '</dd>' + (r.notes ? '<dt>Notes</dt><dd>' + esc(r.notes) + '</dd>' : '') + '<dt>Report file</dt><dd>' + fileLink(r.file) + '</dd><dt>Submitted</dt><dd>' + ftime(r.t) + ' by ' + esc(r.by) + '</dd>' +
+      '<dt>Method</dt><dd>' + esc(r.method) + '</dd>' + (r.notes ? '<dt>Notes</dt><dd>' + esc(r.notes) + '</dd>' : '') + (r.gps ? '<dt>Position</dt><dd>' + (r.gps.lat ? r.gps.lat.toFixed(5) + ', ' + r.gps.lon.toFixed(5) + ', ' : '') + esc(r.gps.text) + ' ' + (r.gps.flag ? pill('Check position', 'warn') : pill('At the point', 'ok')) + (r.queued ? ' ' + pill('Sent from queue', 'neutral') : '') + '</dd>' : '') + (r.photos && r.photos.length ? '<dt>Photos</dt><dd>' + photos(r.photos) + '</dd>' : '') + '<dt>Report file</dt><dd>' + fileLink(r.file) + '</dd><dt>Submitted</dt><dd>' + ftime(r.t) + ' by ' + esc(r.by) + '</dd>' +
       (r.reviewAt ? '<dt>Review</dt><dd>' + esc(r.status) + ' ' + ftime(r.reviewAt) + ' by ' + esc(r.reviewBy) + (r.comment ? ': ' + esc(r.comment) : '') + '</dd>' : '') + '</dl>';
     h += '<table class="mt"><tr><th>Parameter</th><th>Result</th><th>Limit</th><th>Check</th></tr>';
     Object.keys(r.values).forEach(function (pid) {
-      var p = param(pid); if (!p) { return; }
+      var p = param(pid); if (!p) { return; } p = pfor(p, r.op);
       var br = r.breaches.indexOf(pid) >= 0;
       h += '<tr><td>' + esc(p.label) + '</td><td class="nw' + (br ? ' breach' : '') + '">' + fmtVal(p, r.values[pid]) + '</td><td class="nw">' + esc(limitText(p)) + '</td><td>' + (br ? pill('Breach', 'bad') : pill('Within limit', 'ok')) + '</td></tr>';
     });
@@ -825,7 +837,13 @@ R.limits = function () {
     var inp = function (side) { var v = p[side]; return edit ? '<input type="number" step="any" style="width:100px" data-limit="' + p.id + ':' + side + '" value="' + (v === null ? '' : v) + '" placeholder="none" aria-label="' + esc(p.label + ' ' + side) + '">' : (v === null ? '<span class="muted">none</span>' : v); };
     h += '<tr><td>' + esc(p.label) + (p.custom ? ' ' + pill('Added', 'neutral') : '') + '</td><td>' + esc(p.group) + '</td><td>' + (p.kind === 'live' ? 'Live probe' : 'Laboratory') + '</td><td>' + esc(p.unit || 'none') + '</td><td>' + inp('min') + '</td><td>' + inp('max') + '</td>' + (edit ? '<td class="no-print">' + (p.custom ? '<button class="btn small alt" data-delparam="' + p.id + '">Remove</button>' : '') + '</td>' : '') + '</tr>';
   });
-  return h + '</table></div>';
+  h += '</table></div>';
+  var sop = ui.role === 'operator' ? ui.op : ui.focus, sl = sop && S.siteLimits && S.siteLimits[sop];
+  if (sl) {
+    var diff = S.params.filter(function (p) { var o = sl[p.id]; return o && (o.min !== p.min || o.max !== p.max); });
+    h += '<div class="card mt"><h3>Site limits, ' + esc(opName(sop)) + '</h3><p class="small muted">Set by ZEMA from the approved EIS during onboarding. These replace the register values above for this mine.</p>' + (diff.length ? '<table><tr><th>Parameter</th><th>Register</th><th>Site limit</th></tr>' + diff.map(function (p) { return '<tr><td>' + esc(p.label) + '</td><td>' + esc(limitText(p)) + '</td><td>' + esc(limitText(pfor(p, sop))) + '</td></tr>'; }).join('') + '</table>' : '<p class="small">No site limit differs from the register.</p>') + '</div>';
+  }
+  return h;
 };
 R.log = function () {
   var list = applyF('log', S.log, function (r) { return r.role; }, function (r) { return r.name + ' ' + r.text + ' ' + opName(r.op); });
@@ -847,7 +865,7 @@ R.report = function () {
   h += '<div class="report"><h2>Environmental compliance report</h2><div class="muted">' + esc(op.company) + ' (' + esc(op.name) + '), ' + esc(op.town) + '. Licence ' + esc(op.licence.no) + ', ' + lic.p.replace(/<[^>]+>/g, '') + '.</div><div class="muted">Prepared ' + ftime(now()) + ' by ' + esc(who(user())) + '. Demonstration data only.</div>';
   h += '<h3>Summary</h3><p>Live readings within limits in the recent window: ' + score(op.id).toFixed(1) + '%. Open items: ' + st.open + ', of which ' + st.overdue + ' overdue. Overdue laboratory samples: ' + st.schedOver + '. Open incidents: ' + st.incidents + '.</p>';
   h += '<h3>Live monitoring this session</h3><table><tr><th>Point</th><th>Parameter</th><th>Limit</th><th>Readings</th><th>Minimum</th><th>Mean</th><th>Maximum</th><th>Breaches</th></tr>';
-  POINTS.forEach(function (pt) { pt.live.forEach(function (pm) { var s = series[skey(op.id, pt.id, pm)], p = param(pm); h += '<tr><td>' + esc(pt.name) + '</td><td>' + esc(p.label) + '</td><td>' + esc(limitText(p)) + '</td><td>' + s.n + '</td><td>' + (s.n ? s.min.toFixed(p.dec) : '') + '</td><td>' + (s.n ? (s.sum / s.n).toFixed(p.dec) : '') + '</td><td>' + (s.n ? s.max.toFixed(p.dec) : '') + '</td><td>' + s.exceed + '</td></tr>'; }); });
+  POINTS.forEach(function (pt) { pt.live.forEach(function (pm) { var s = series[skey(op.id, pt.id, pm)], p = pfor(param(pm), op.id); h += '<tr><td>' + esc(pt.name) + '</td><td>' + esc(p.label) + '</td><td>' + esc(limitText(p)) + '</td><td>' + s.n + '</td><td>' + (s.n ? s.min.toFixed(p.dec) : '') + '</td><td>' + (s.n ? (s.sum / s.n).toFixed(p.dec) : '') + '</td><td>' + (s.n ? s.max.toFixed(p.dec) : '') + '</td><td>' + s.exceed + '</td></tr>'; }); });
   h += '</table><h3>Field and laboratory results</h3><table><tr><th>Reference</th><th>Type</th><th>Point</th><th>Sampled</th><th>Breaches</th><th>Status</th></tr>';
   S.results.filter(function (r) { return r.op === op.id; }).forEach(function (r) { h += '<tr><td>' + esc(r.id) + '</td><td>' + esc((r.mode || 'Laboratory') + (r.byRole === 'inspector' ? ', ZEMA' : '')) + '</td><td>' + esc(ptName(r.point)) + '</td><td>' + fdate(r.sampled) + '</td><td>' + (r.breaches.length ? r.breaches.map(function (b) { return esc(param(b) ? param(b).label : b); }).join(', ') : 'None') + '</td><td>' + esc(r.status) + '</td></tr>'; });
   h += '</table><h3>Actions</h3>' + itemsTable(S.items.filter(function (it) { return it.op === op.id; }).slice(0, 60), false).replace(/<button[^>]*>[^<]*<\/button>/g, '');
@@ -881,10 +899,10 @@ function aiNowVal(op, pt, pm) { var s = series[skey(op, pt, pm)]; return s ? aiM
 function aiSurrogates(opId) {
   var out = [];
   POINTS.forEach(function (pt) {
-    if (pt.live.indexOf('ec') < 0) { return; }
+    if (pt.live.indexOf('ec') < 0 || !liveFeed(opId, pt.id, 'ec') || !liveFeed(opId, pt.id, 'ph') || !liveFeed(opId, pt.id, 'turb')) { return; }
     var ec = aiNowVal(opId, pt.id, 'ec'), ph = aiNowVal(opId, pt.id, 'ph'), tu = aiNowVal(opId, pt.id, 'turb');
     [['cu', AI.surrogate.cu(ec, ph, tu)], ['mn', AI.surrogate.mn(ec, ph, tu)], ['so4', AI.surrogate.so4(ec)]].forEach(function (x) {
-      var p = param(x[0]); if (!p) { return; }
+      var p = param(x[0]); if (!p) { return; } p = pfor(p, opId);
       var last = S.results.filter(function (r) { return r.op === opId && r.point === pt.id && r.values[x[0]] != null; })[0];
       out.push({ point: pt.id, param: p, est: x[1], over: !within(p, x[1]), near: p.max !== null && x[1] > 0.8 * p.max, last: last });
     });
@@ -897,7 +915,7 @@ function aiFaults(opId) {
   var out = [];
   POINTS.forEach(function (pt) {
     pt.live.forEach(function (pm) {
-      var s = series[skey(opId, pt.id, pm)], p = param(pm); if (!s) { return; }
+      var s = series[skey(opId, pt.id, pm)], p = param(pm); if (!s || !liveFeed(opId, pt.id, pm)) { return; }
       var v = aiRecent(s, AI.flatlineCount);
       if (v.length >= AI.flatlineCount && v.every(function (x) { return x === v[0]; })) { out.push({ point: pt.id, param: p, kind: 'Possible stuck probe', text: 'The last ' + AI.flatlineCount + ' readings are identical (' + fmtVal(p, v[0]) + '). Check the probe and logger.' }); }
       var w = aiRecent(s, 30);
@@ -921,7 +939,7 @@ function aiForecasts(opId) {
   var out = [];
   POINTS.forEach(function (pt) {
     pt.live.forEach(function (pm) {
-      var s = series[skey(opId, pt.id, pm)], p = param(pm); if (!s) { return; }
+      var s = series[skey(opId, pt.id, pm)], p = pfor(param(pm), opId); if (!s || !liveFeed(opId, pt.id, pm)) { return; }
       var y = aiRecent(s, AI.forecastWindow), n = y.length; if (n < 8) { return; }
       var mx = (n - 1) / 2, my = aiMean(y), num = 0, den = 0;
       y.forEach(function (v, i) { num += (i - mx) * (v - my); den += (i - mx) * (i - mx); });
@@ -966,7 +984,7 @@ R.ai = function () {
   ops.forEach(function (op) {
     var su = aiSurrogates(op.id), fa = aiFaults(op.id), fc = aiForecasts(op.id);
     h += '<div class="card mt"><h3>' + esc(op.name) + ', ' + esc(op.town) + '</h3>';
-    h += '<h4>Surrogate estimates from live probes</h4><table><tr><th>Point</th><th>Parameter</th><th>Estimate</th><th>Limit</th><th>Signal</th><th>Last measured</th></tr>';
+    h += '<h4>Surrogate estimates from live probes</h4>' + (su.length ? '' : '<p class="muted small">Needs live conductivity, pH and turbidity from approved sensors.</p>') + '<table><tr><th>Point</th><th>Parameter</th><th>Estimate</th><th>Limit</th><th>Signal</th><th>Last measured</th></tr>';
     su.forEach(function (x) {
       h += '<tr><td>' + esc(ptName(x.point)) + '</td><td>' + esc(x.param.label) + '</td><td class="nw">' + fmtVal(x.param, x.est) + '</td><td class="nw">' + esc(limitText(x.param)) + '</td><td>' + (x.over ? pill('Indicative exceedance: take a confirming sample', 'bad') : x.near ? pill('Approaching limit', 'warn') : pill('Within limit', 'ok')) + '</td><td class="small">' + (x.last ? fmtVal(x.param, x.last.values[x.param.id]) + ', ' + esc(x.last.id) + ', ' + fdate(x.last.sampled) : '<span class="muted">No result yet</span>') + '</td></tr>';
     });
@@ -1004,7 +1022,7 @@ var FORMS = {
     b += '<div class="form-grid res-field" style="display:none">' + row('Instrument or meter ID', '<input type="text" name="instrument" placeholder="For example multiparameter meter MP-02">') + row('Date last calibrated', '<input type="date" name="calib">') + '</div>';
     b += row('Method', '<input type="text" name="method" style="width:100%" placeholder="For example ICP-OES, or handheld probe">') + row('Notes (optional)', '<textarea name="notes" rows="2"></textarea>') + row('Attach the report, certificate or field sheet (optional, PDF, Word, Excel or photo, up to 2 MB)', '<input type="file" name="file">');
     b += '<p class="small muted">Enter the results you have. Leave a box empty if the parameter was not tested. Values are checked against the limit register when you submit.</p><table><tr><th>Parameter</th><th>Limit</th><th>Result</th></tr>';
-    S.params.forEach(function (p) { var show = resParamFor(p, m0); b += '<tr data-rk="' + p.kind + '"' + (show ? '' : ' style="display:none"') + '><td>' + esc(p.label) + '</td><td class="small nw">' + esc(limitText(p)) + '</td><td><input type="number" step="any" name="v_' + p.id + '" style="width:120px"> ' + esc(p.unit) + '</td></tr>'; });
+    S.params.forEach(function (p) { var show = resParamFor(p, m0); b += '<tr data-rk="' + p.kind + '"' + (show ? '' : ' style="display:none"') + '><td>' + esc(p.label) + '</td><td class="small nw">' + esc(limitText(ins ? p : pfor(p, ui.op))) + '</td><td><input type="number" step="any" name="v_' + p.id + '" style="width:120px"> ' + esc(p.unit) + '</td></tr>'; });
     return ['Submit monitoring results' + (ins ? ', ZEMA inspector' : ', ' + opName(ui.op)), b + '</table>' + actionsFooter('Submit and check against limits')];
   },
   'doc-op': function () {
@@ -1070,6 +1088,11 @@ function submitForm(f) {
   var done = function () { save(); closeModal(); render(); };
   if (!currentAccount()) { closeModal(); render(); return; }
   if (kind === 'delete') { var dk = id.split(':'); doDelete(dk[0], dk[1], v('reason'), u); done(); flash('Deleted. The record is kept in Deleted records.'); return; }
+  if (kind === 'field') { return submitField(f, v, u, err); }
+  if (kind.indexOf('onb-') === 0) { return submitOnboard(kind, f, v, u, done, err); }
+  if (kind === 'onbreject') { var sr = siteById(id); sr.status = 'Rejected'; sr.rejectReason = v('reason'); S.accounts.forEach(function (x) { if (x.op === id && x.status === 'Pending approval') { x.status = 'Rejected'; } }); logAct(u, id, 'Rejected new operator ' + sr.name + ': ' + v('reason')); return done(); }
+  if (kind === 'device') { return submitDevice(f, v, u, done, err); }
+  if (kind === 'devreject') { var dr = devById(id); dr.status = 'Rejected'; dr.comment = v('reason'); dr.reviewBy = who(u); dr.reviewAt = now(); logAct(u, dr.op, 'Rejected sensor ' + dr.id + ': ' + v('reason')); return done(); }
   if (kind === 'approve' || kind === 'reject') {
     var ac = acctById(id);
     if (kind === 'approve') { ac.role = v('role'); ac.op = ac.role === 'operator' ? v('op') : ''; ac.admin = ac.role === 'inspector' && f.elements.admin.checked; ac.status = 'Active'; }
@@ -1235,11 +1258,12 @@ R.auth = function () {
     h += '<div class="card"><h2 class="page">Log in</h2><p class="lead">Already have an account? Log in with your email and password.</p><form id="af" data-kind="signin">' + row('Email address', '<input type="text" name="email" autocomplete="username" required style="width:100%" value="' + esc(ui.fillEmail || '') + '">') + pwField('password', 'Password', 'current-password') +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' + showPw() + '<button type="button" class="linkbtn" data-auth="forgot">Forgot your password?</button></div>' +
       '<div class="err" id="aerr"></div><div class="form-actions"><button type="submit" class="btn">Log in</button></div></form>' +
-      '<p class="mt">Community member? <button class="btn alt small" data-auth="concern">Report a pollution concern</button> (no account needed)</p></div>' + demoAccountsBox();
+      '<p class="mt">Community member? <button class="btn alt small" data-auth="concern">Report a pollution concern</button> or see the <button class="btn alt small" data-auth="public">Public compliance status</button> (no account needed)</p></div>' + demoAccountsBox();
   } else if (v === 'signup') {
     h += '<div class="card"><h2 class="page">Create an account</h2><p class="lead">First time here? Sign up once. After you verify your email, a ZEMA administrator approves your account and role before you can sign in.</p><form id="af" data-kind="signup">' +
       row('Full name', '<input type="text" name="name" required style="width:100%">') + row('Work email address', '<input type="email" name="email" required style="width:100%">') +
-      '<div class="form-grid">' + row('I am', '<select name="role" id="su-role"><option value="operator">A mine operator</option><option value="inspector">A ZEMA inspector</option></select>') + '<div id="su-op">' + row('Mine or site', opSelect('op', 'c')) + '</div></div>' +
+      '<div class="form-grid">' + row('I am', '<select name="role" id="su-role"><option value="operator">A mine operator</option><option value="inspector">A ZEMA inspector</option></select>') + '<div id="su-op">' + row('Mine or site', '<select name="op" id="su-opsel">' + OPERATORS.map(function (o) { return '<option value="' + o.id + '">' + esc(o.name + ', ' + o.town) + '</option>'; }).join('') + '<option value="__new">My mine is not listed: register a new operator</option></select>') + '</div></div>' +
+      '<div id="su-new" style="display:none"><p class="small muted">Register your mine. The system creates the site, standard monitoring points, a default limit register and a sampling schedule. ZEMA then uploads your approved EIS, sets the limits to its conditions and approves.</p><div class="form-grid">' + row('Mine or site name', '<input type="text" name="siteName">') + row('District or town', '<input type="text" name="town">') + row('Latitude (for example -12.55)', '<input type="number" step="any" name="lat">') + row('Longitude (for example 28.24)', '<input type="number" step="any" name="lon">') + '</div>' + row('River catchment (optional)', '<input type="text" name="river" style="width:100%">') + '</div>' +
       '<div id="su-org">' + row('Company or institution name', '<input type="text" name="org" style="width:100%" placeholder="For example Demo Cobalt and Copper C Ltd">') + '</div>' +
       pwField('password', 'Password', 'new-password') + showPw() + RULES +
       '<div class="err" id="aerr"></div><div class="form-actions"><button type="button" class="btn alt" data-auth="signin">I already have an account</button><button type="submit" class="btn">Create account</button></div></form></div>';
@@ -1257,6 +1281,8 @@ R.auth = function () {
       '<p class="mt"><button class="btn alt small" data-auth="signin">Back to sign in</button></p>';
   } else if (v === 'sent') {
     h += '<div class="card"><h2 class="page">Check your email</h2><p>If an account exists for that address, a password reset link has been sent.</p><button class="btn alt" data-auth="signin">Back to sign in</button></div>';
+  } else if (v === 'public') {
+    h += publicPage();
   } else if (v === 'concern') {
     h += '<div class="card"><h2 class="page">Report a pollution concern</h2><p class="lead">No account needed. Your name and contact are optional.</p>' + concernForm() + '</div><p class="mt"><button class="btn alt small" data-auth="signin">Back to sign in</button></p>';
   }
@@ -1287,13 +1313,13 @@ function authSubmit(f) {
         save(); return err('Email or password is not correct.');
       }
       if (a.status === 'Pending verification') { return err('Verify your email address first. Use the link in the verification email, or create the account again to resend it.'); }
-      if (a.status === 'Pending approval') { return err('Your email is verified. A ZEMA administrator must approve your account before you can sign in.'); }
+      if (a.status === 'Pending approval') { return err(siteById(a.op) && siteById(a.op).status === 'Onboarding' ? 'Your email is verified. ZEMA is setting up your mine: uploading the approved EIS, setting the limits and licence. You can sign in once ZEMA approves it.' : 'Your email is verified. A ZEMA administrator must approve your account before you can sign in.'); }
       if (a.status !== 'Active') { return err('This account is ' + a.status.toLowerCase() + '. Contact a ZEMA administrator.'); }
       a.failed = 0; a.lastLogin = now();
       session = { id: a.id, last: now() }; saveSession();
       ui.role = a.role; if (a.role === 'operator') { ui.op = a.op; ui.sel = a.op + '|out|ec'; }
       ui.tab = TABS[a.role][0][0]; ui.fillEmail = '';
-      logAct(acctUser(a), a.op, 'Signed in'); save(); render();
+      logAct(acctUser(a), a.op, 'Signed in'); ui.prompt = true; save(); render();
     });
     return;
   }
@@ -1304,10 +1330,16 @@ function authSubmit(f) {
     if (ex && ex.status !== 'Pending verification') { return err('An account with this email already exists. Sign in or use Forgot password.'); }
     var probs = pwProblems(p1); if (probs.length) { return err('The password needs ' + probs.join(', ') + '.'); }
     if (role === 'operator' && !v('org')) { return err('Enter your company or institution name.'); }
+    var newSite = role === 'operator' && v('op') === '__new';
+    if (newSite) {
+      var la = parseFloat(v('lat')), lo = parseFloat(v('lon'));
+      if (!v('siteName') || !v('town')) { return err('Enter the mine or site name and the district or town.'); }
+      if (isNaN(la) || isNaN(lo) || la > -8 || la < -18.5 || lo < 21.9 || lo > 33.8) { return err('Enter a latitude between -8 and -18.5 and a longitude between 21.9 and 33.8 (inside Zambia).'); }
+    }
     var salt = randomToken();
     hashPw(p1, salt).then(function (h) {
       var a = ex || { id: nextRef('USR'), created: now(), failed: 0, lockedUntil: 0, lastLogin: null, admin: false, approvedBy: '', approvedAt: null };
-      a.email = email; a.name = v('name'); a.position = ''; a.role = role; a.op = role === 'operator' ? v('op') : ''; a.org = role === 'operator' ? v('org') : 'Zambia Environmental Management Agency'; a.staff = '';
+      a.email = email; a.name = v('name'); a.position = ''; a.role = role; a.op = role === 'operator' ? (newSite ? createSite({ siteName: v('siteName'), org: v('org'), town: v('town'), lat: v('lat'), lon: v('lon'), river: v('river') }, v('name')).id : v('op')) : ''; a.org = role === 'operator' ? v('org') : 'Zambia Environmental Management Agency'; a.staff = '';
       a.salt = salt; a.hash = h; a.verified = false; a.status = 'Pending verification';
       if (!ex) { S.accounts.push(a); }
       logAct({ role: role, name: a.name }, a.op, 'Created account ' + a.id + ' for ' + email + ' as ' + (role === 'inspector' ? 'ZEMA inspector' : 'operator, ' + opName(a.op)) + '; verification email sent');
@@ -1336,7 +1368,7 @@ function useToken(tok) {
   if (kind === 'verify') {
     a.verified = true; a.status = 'Pending approval';
     logAct({ role: a.role, name: a.name }, a.op, 'Verified email ' + a.email + '; account waiting for approval');
-    save(); ui.auth = 'signin'; ui.fillEmail = a.email; render(); flash('Email verified. A ZEMA administrator must approve your account before you can sign in.');
+    save(); ui.auth = 'signin'; ui.fillEmail = a.email; render(); flash(siteById(a.op) && siteById(a.op).status === 'Onboarding' ? 'Email verified. ZEMA will now set up your mine (approved EIS, limits, licence). You can sign in once it is approved.' : 'Email verified. A ZEMA administrator must approve your account before you can sign in.');
   } else { ui.resetFor = a.id; ui.auth = 'reset'; save(); render(); }
 }
 
@@ -1347,7 +1379,8 @@ R.accounts = function () {
     filterBar('accounts', ['Pending verification', 'Pending approval', 'Active', 'Suspended', 'Rejected'], false) + '</div><div class="card"><table><tr><th>Name and email</th><th>Role</th><th>Created</th><th>Email verified</th><th>Last sign in</th><th>Status</th><th class="no-print"></th></tr>';
   list.forEach(function (a) {
     var b = '', me = currentAccount();
-    if (a.status === 'Pending approval') { b = '<button class="btn small" data-approve="' + a.id + '">Approve</button> <button class="btn small alt" data-reject="' + a.id + '">Reject</button>'; }
+    if (a.status === 'Pending approval' && siteById(a.op) && siteById(a.op).status === 'Onboarding') { b = '<button class="btn small" data-go="onboarding">Complete onboarding</button>'; }
+    else if (a.status === 'Pending approval') { b = '<button class="btn small" data-approve="' + a.id + '">Approve</button> <button class="btn small alt" data-reject="' + a.id + '">Reject</button>'; }
     else if (a.status === 'Active' && (!me || me.id !== a.id)) { b = '<button class="btn small alt" data-suspend="' + a.id + '">Suspend</button>'; }
     else if (a.status === 'Suspended') { b = '<button class="btn small alt" data-reactivate="' + a.id + '">Reactivate</button>'; }
     h += '<tr><td>' + esc(a.name) + sampleTag(a) + '<div class="small muted">' + esc(a.email) + '</div></td><td>' + esc(a.admin ? 'ZEMA administrator' : a.role === 'inspector' ? 'ZEMA inspector' : 'Operator') + '<div class="small muted">' + esc([a.org, a.role === 'operator' ? opName(a.op) : a.staff].filter(Boolean).join(', ')) + '</div></td><td class="nw">' + ftime(a.created) + '</td><td>' + (a.verified ? pill('Yes', 'ok') : pill('No', 'neutral')) + '</td><td class="nw">' + (a.lastLogin ? ftime(a.lastLogin) : '<span class="muted">Never</span>') + '</td><td>' +
@@ -1433,8 +1466,22 @@ document.addEventListener('click', function (e) {
   if ((a = t.getAttribute('data-delparam'))) { var p = param(a); if (p) { S.params = S.params.filter(function (x) { return x.id !== a; }); logAct(user(), '', 'Removed parameter ' + p.label); save(); render(); } return; }
   if ((a = t.getAttribute('data-export'))) { exportCsv(a); return; }
   if (t.id === 'pause-btn') { ui.paused = !ui.paused; render(); return; }
+  var tw = t.closest && t.closest('[data-twin]'); if (tw) { ui.twinPt = tw.getAttribute('data-twin'); render(); return; }
+  if ((a = t.getAttribute('data-onb'))) { var ob = a.split(':'), of = onboardForm(ob[0], siteById(ob[1])); openModal(of[0], of[1]); return; }
+  if ((a = t.getAttribute('data-onbapprove'))) { var sa = siteById(a); if (!onboardReady(sa)) { flash('Complete every onboarding step first.'); return; } approveSite(sa, user()); save(); render(); flash(sa.name + ' approved and added to the dashboards. The operator can now sign in and register sensors.'); return; }
+  if ((a = t.getAttribute('data-onbreject'))) { openModal('Reject new operator', '<form id="mf" data-kind="onbreject" data-id="' + a + '">' + row('Reason, shown to the operator', '<textarea name="reason" rows="3" required></textarea>') + actionsFooter('Reject')); return; }
+  if ((a = t.getAttribute('data-devapprove'))) { var da = devById(a); da.status = 'Approved, awaiting first data'; da.key = randomKey(); da.reviewBy = who(user()); da.reviewAt = now(); logAct(user(), da.op, 'Approved sensor ' + da.id + ' against the ZEMA sensor specifications'); notify('Sensor approved', da.op, 'Sensor ' + da.id + ' approved by ZEMA', 'Open Sensors and use Connection details to configure the logger. Readings count from the first message.', ['Email'], ['operator']); save(); render(); flash('Sensor approved. The operator now sees the connection details.'); return; }
+  if ((a = t.getAttribute('data-devreject'))) { openModal('Reject sensor ' + a, '<form id="mf" data-kind="devreject" data-id="' + a + '">' + row('Reason, shown to the operator', '<textarea name="reason" rows="3" required></textarea>') + actionsFooter('Reject sensor')); return; }
+  if ((a = t.getAttribute('data-devconnect'))) { var dc = devById(a); openModal('Connection details, ' + dc.id, connectionDetails(dc) + '<div class="form-actions"><button type="button" class="btn" data-cancel="1">Close</button></div>'); return; }
+  if ((a = t.getAttribute('data-devtest'))) { var dt = devById(a); dt.status = 'Live'; dt.firstData = now(); addSeriesFor(opById(dt.op)); logAct(user(), dt.op, 'First reading received from sensor ' + dt.id + '; sensor is live'); save(); render(); flash('First reading received. ' + dt.id + ' is live and its readings now count.'); return; }
+  if ((a = t.getAttribute('data-devoff'))) { var dfo = devById(a); dfo.status = 'Offline'; logAct(SYS, dfo.op, 'Sensor ' + dfo.id + ' stopped reporting'); save(); render(); return; }
+  if ((a = t.getAttribute('data-devon'))) { var dn = devById(a); dn.status = 'Live'; logAct(SYS, dn.op, 'Sensor ' + dn.id + ' reporting again'); save(); render(); return; }
+  if (t.id === 'digest-btn') { var nd = overdueDigest(true); save(); render(); flash(nd ? 'Overdue digest sent for ' + nd + ' mine(s).' : 'Nothing is overdue.'); return; }
+  if (t.id === 'mr-submit') { submitMonthly(); return; }
+  if (t.id === 'gps-btn') { captureGps(); return; }
+  if (t.id === 'field-flush') { var nf = flushFieldQueue(); render(); flash(nf ? nf + ' queued entr' + (nf === 1 ? 'y' : 'ies') + ' sent.' : 'Still offline: untick Work offline first.'); return; }
   if (t.id === 'fault-btn') { var fs = series[skey(ui.op, 'out', 'turb')]; fs.stuck = 40; flash('The turbidity probe at the final effluent outlet is now stuck for about 2 minutes. Watch the sensor fault checks.'); render(); return; }
-  if ((a = t.getAttribute('data-go'))) { ui.tab = a; render(); return; }
+  if ((a = t.getAttribute('data-go'))) { closeModal(); ui.tab = a; render(); return; }
   if ((a = t.getAttribute('data-summary'))) { var sd = S.docs.filter(function (x) { return x.id === a; })[0]; openModal('Summary helper, ' + sd.id, '<p class="small muted">Draft built from the report details and the registers for this mine. Indicative only: read the report itself before deciding.</p>' + aiDocSummary(sd).map(function (x) { return '<p>' + esc(x) + '</p>'; }).join('') + '<div class="form-actions"><button type="button" class="btn" data-cancel="1">Close</button></div>'); return; }
   if (t.id === 'breach-btn') { var list = Object.keys(series).filter(function (k) { return series[k].op === ui.op && series[k].point === 'out'; }); var s = series[list[Math.floor(rnd() * list.length)]]; startSpike(s); ui.sel = skey(s.op, s.point, s.param); flash('A breach is being simulated on ' + param(s.param).label + ' at the final effluent outlet. Watch the chart.'); render(); return; }
   if (t.id === 'print-btn') { window.print(); return; }
@@ -1464,10 +1511,18 @@ document.addEventListener('submit', function (e) {
 });
 document.addEventListener('change', function (e) {
   var t = e.target, a;
-  if (t.id === 'su-role') { $('su-op').style.display = $('su-org').style.display = t.value === 'operator' ? '' : 'none'; return; }
+  if (t.id === 'su-role') { $('su-op').style.display = $('su-org').style.display = t.value === 'operator' ? '' : 'none'; $('su-new').style.display = t.value === 'operator' && $('su-opsel').value === '__new' ? '' : 'none'; return; }
   if (t.getAttribute && t.getAttribute('data-showpw')) { var fm = t.closest('form'); Array.prototype.forEach.call(fm.querySelectorAll('input[name=password]'), function (el) { el.type = t.checked ? 'text' : 'password'; }); return; }
   if (t.id === 'rep-op') { ui.repOp = t.value; render(); return; }
   if (t.id === 'lab-mode') { ui.labMode = t.value; render(); return; }
+  if (t.id === 'out-ch') { ui.outCh = t.value; render(); return; }
+  if (t.id === 'mr-op') { ui.repOp = t.value; render(); return; }
+  if (t.id === 'mr-period') { ui.period = t.value; render(); return; }
+  if (t.id === 'field-point') { ui.fieldPt = t.value; return; }
+  if (t.id === 'field-offline') { ui.fieldOffline = t.checked; if (!t.checked) { var nq = flushFieldQueue(); render(); if (nq) { flash(nq + ' queued field entr' + (nq === 1 ? 'y' : 'ies') + ' sent.'); } } else { render(); } return; }
+  if (t.id === 'su-opsel') { $('su-new').style.display = t.value === '__new' ? '' : 'none'; return; }
+  if (t.id === 'twin-op') { ui.twinOp = t.value; render(); return; }
+  if (t.id === 'dev-method') { $('dev-platform').style.display = t.value === 'Bridge' ? '' : 'none'; return; }
   if (t.id === 'res-mode') {
     var fm2 = t.closest('form'), md = t.value;
     fm2.querySelector('.res-lab').style.display = md === 'Laboratory' ? '' : 'none'; fm2.querySelector('.res-field').style.display = md === 'Field' ? '' : 'none';
@@ -1484,7 +1539,7 @@ document.addEventListener('change', function (e) {
   if ((a = t.getAttribute('data-f'))) { fstate(t.getAttribute('data-tab'))[a] = t.value; render(); return; }
   if (t.id === 'restore-file') {
     var file = t.files[0]; if (!file) { return; }
-    var r = new FileReader(); r.onload = function () { try { var d = JSON.parse(r.result); if (d.v !== 2 || !d.items) { throw new Error(); } S = d; rebuildOpenLive(); save(); closeModal(); render(); flash('Backup restored.'); } catch (x) { $('ferr').textContent = 'This file is not a backup from this prototype.'; } }; r.readAsText(file);
+    var r = new FileReader(); r.onload = function () { try { var d = JSON.parse(r.result); if (d.v !== 3 || !d.items) { throw new Error(); } S = d; syncSites(); OPERATORS.forEach(addSeriesFor); rebuildOpenLive(); save(); closeModal(); render(); flash('Backup restored.'); } catch (x) { $('ferr').textContent = 'This file is not a backup from this prototype.'; } }; r.readAsText(file);
   }
 });
 document.addEventListener('input', function (e) {
@@ -1499,6 +1554,475 @@ function dataPanel() {
     '<h3 class="mt">Reset demonstration</h3><p class="small muted">Deletes everything entered in this browser and reloads the sample records. Type RESET to confirm.</p><div class="bar"><input type="text" id="reset-confirm" size="10"><button class="btn warn" id="reset-btn">Reset demo</button></div><div class="err" id="ferr"></div><div class="form-actions"><button class="btn alt" data-cancel="1">Close</button></div>';
 }
 
+/* ---------------- operator onboarding, smart sensors and site twin ----------------
+   New operators register their mine at sign up. The system generates the site record,
+   standard monitoring points, a default limit register, a sampling schedule and a licence
+   record. A ZEMA administrator then uploads the approved EIS, sets the limits to its
+   conditions, completes the licence and approves; only then does the mine join the
+   dashboards. Sensors are registered by the operator, approved by ZEMA, then connected. */
+var CONNECT = {
+  MQTT: { label: 'Cellular or Wi-Fi to cloud (MQTT)', note: 'The logger publishes readings over 4G or Wi-Fi to the cloud broker using TLS.' },
+  HTTPS: { label: 'HTTPS API from logger or SCADA', note: 'An existing logger or SCADA system posts readings to the web address with the device key.' },
+  Bridge: { label: 'Cloud IoT platform bridge', note: 'A rule in the mine\'s IoT platform forwards readings to the compliance platform.' }
+};
+var PLATFORMS = ['ThingsBoard', 'AWS IoT Core', 'Azure IoT Hub', 'Other'];
+var DEMO_HOST = { mqtt: 'mqtts://iot.ecm-demo.zm:8883', https: 'https://api.ecm-demo.zm/v1/readings' };
+
+function ensureStore() {
+  S.sites = S.sites || []; S.devices = S.devices || []; S.siteLimits = S.siteLimits || {};
+  if (!S.devicesSeeded) {
+    OPERATORS.forEach(function (op) { POINTS.forEach(function (pt) { S.devices.push(seedDevice(op.id, pt)); }); });
+    S.devicesSeeded = true;
+  }
+}
+function seedDevice(op, pt) {
+  return { id: nextRef('DEV'), op: op, point: pt.id, params: pt.live.slice(), make: 'Demo Instruments', model: pt.id === 'dam' ? 'Level and pH sonde' : 'Multiparameter sonde', serial: 'DEMO-' + op.toUpperCase() + '-' + pt.code,
+    method: 'MQTT', platform: '', calibDate: now() - 40 * DAY, calibFile: null, status: 'Live', key: randomKey(), by: 'Demo operator officer', t: now() - 200 * DAY, reviewBy: 'Demo inspector', reviewAt: now() - 199 * DAY, comment: '', firstData: now() - 198 * DAY, sample: true };
+}
+function randomKey() { var a = new Uint8Array(12); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(a) : a.forEach(function (x, i) { a[i] = Math.floor(Math.random() * 256); }); return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
+function siteById(id) { for (var i = 0; i < (S.sites || []).length; i++) { if (S.sites[i].id === id) { return S.sites[i]; } } return null; }
+function mapXY(lat, lon) { var c = function (v) { return Math.max(0.05, Math.min(0.95, v)); }; return { x: c((lon - 25.9) / 2.8), y: c((-lat - 11.9) / 1.4) }; }
+
+/* site record to operator record used by every screen */
+function siteToOperator(s) {
+  var xy = mapXY(s.lat, s.lon), lic = s.licence || {};
+  return { id: s.id, name: s.name, company: s.company, town: s.town, x: xy.x, y: xy.y, stress: 0.2, lat: s.lat, lon: s.lon, river: s.river || 'Not stated', isNew: true,
+    licence: { no: lic.no || 'Pending', type: lic.type || 'Effluent discharge licence', issued: lic.issued ? (lic.issued - S.created) / DAY : 0, expiry: lic.expiry ? (lic.expiry - S.created) / DAY : 0, conditions: lic.conditions || [] } };
+}
+function syncSites() {
+  ensureStore();
+  for (var i = OPERATORS.length - 1; i >= 0; i--) { var st = OPERATORS[i].isNew && siteById(OPERATORS[i].id); if (OPERATORS[i].isNew && (!st || st.status !== 'Active')) { OPERATORS.splice(i, 1); } }
+  S.sites.forEach(function (s) {
+    if (s.status !== 'Active') { return; }
+    var o = siteToOperator(s), i = OPERATORS.map(function (x) { return x.id; }).indexOf(s.id);
+    if (i < 0) { OPERATORS.push(o); } else { OPERATORS[i] = o; }
+  });
+}
+
+/* site specific limits: an override from the EIS, otherwise the register default */
+function pfor(p, op) { var o = op && S.siteLimits && S.siteLimits[op] && S.siteLimits[op][p.id]; return o ? Object.assign({}, p, o) : p; }
+
+/* a live series only feeds the system when an approved sensor at that point reports it */
+function deviceFor(op, pt, pm) { return (S.devices || []).filter(function (d) { return d.op === op && d.point === pt && d.params.indexOf(pm) >= 0 && (d.status === 'Live' || d.status === 'Offline'); })[0] || null; }
+function liveFeed(op, pt, pm) { var d = deviceFor(op, pt, pm); return !!d && d.status === 'Live'; }
+function health(op, pt, pm) {
+  var d = deviceFor(op, pt, pm), s = series[skey(op, pt, pm)];
+  if (!d) { return { t: 'No approved sensor', c: 'neutral' }; }
+  if (d.status === 'Offline') { return { t: 'Offline, no data', c: 'bad' }; }
+  if (s && s.stuck > 0) { return { t: 'Possible stuck probe', c: 'warn' }; }
+  return { t: 'Online', c: 'ok' };
+}
+function addSeriesFor(op) {
+  windows[op.id] = windows[op.id] || [];
+  POINTS.forEach(function (pt) { pt.live.forEach(function (pm) {
+    var k = skey(op.id, pt.id, pm); if (series[k]) { return; }
+    var b = simBase(op, pt.id, pm);
+    series[k] = { op: op.id, point: pt.id, param: pm, base: b, sd: SIM[pm].sd * (1 + op.stress), spike: null, values: [b], times: [now()], state: 'ok', n: 0, sum: 0, min: Infinity, max: -Infinity, exceed: 0, warn: 0 };
+  }); });
+}
+
+/* ---------- onboarding ---------- */
+function onboardSteps(s) {
+  return [
+    ['details', 'Site details from the operator', !!(s.name && s.town && s.lat && s.lon)],
+    ['eis', 'Approved EIS uploaded', !!(s.eis && s.eis.file)],
+    ['limits', 'Limit register checked against the EIS', !!s.limitsConfirmed],
+    ['licence', 'Licence details entered', !!(s.licence && s.licence.no && s.licence.expiry)],
+    ['schedule', 'Monitoring points and sampling schedule confirmed', !!s.scheduleConfirmed]
+  ];
+}
+function onboardReady(s) { return onboardSteps(s).every(function (x) { return x[2]; }); }
+function createSite(f, acctName) {
+  var id = 'n' + (S.sites.length + 1), num = function (n) { return parseFloat(f[n]); };
+  var site = { id: id, name: f.siteName, company: f.org, town: f.town, lat: num('lat'), lon: num('lon'), river: f.river || '', status: 'Onboarding', created: now(), requestedBy: acctName,
+    eis: null, limitsConfirmed: null, licence: { no: '', type: 'Effluent discharge licence', issued: null, expiry: null, conditions: [] }, scheduleConfirmed: null,
+    generated: ['Site record and map position', '3 standard monitoring points (tailings dam decant, final effluent outlet, downstream stream)', 'Limit register with ' + S.params.length + ' parameters at default values', 'Sampling schedule (30 days at the outlet and stream, 90 days at the dam)', 'Licence record to complete', 'Sensor slots for each continuous parameter'] };
+  S.sites.push(site);
+  S.siteLimits[id] = {};
+  S.params.forEach(function (p) { S.siteLimits[id][p.id] = { min: p.min, max: p.max }; });
+  logAct(SYS, id, 'New operator ' + site.name + ' registered by ' + acctName + '; site content generated and sent to ZEMA for onboarding');
+  notify('Onboarding request', id, 'New operator awaiting onboarding: ' + site.name, site.company + ' registered ' + site.name + ', ' + site.town + '. Upload the approved EIS, check the limits and licence, then approve in Operator onboarding.', ['Email'], ['admin']);
+  return site;
+}
+function approveSite(s, u) {
+  s.status = 'Active'; s.approvedBy = who(u); s.approvedAt = now();
+  syncSites();
+  var op = opById(s.id);
+  POINTS.forEach(function (pt) { S.schedule.push({ op: s.id, point: pt.id, freq: pt.id === 'dam' ? 90 : 30, last: now() }); });
+  addSeriesFor(op);
+  S.accounts.forEach(function (a) { if (a.op === s.id && a.status === 'Pending approval') { a.status = 'Active'; a.approvedBy = who(u); a.approvedAt = now(); logAct(u, s.id, 'Approved account ' + a.id + ' for ' + a.email + ' as operator, ' + s.name); } });
+  logAct(u, s.id, 'Approved operator ' + s.name + ' after onboarding; added to the dashboards');
+  notify('Onboarding approved', s.id, s.name + ' approved by ZEMA', 'Your mine is now in the compliance system and your account is active. Next, register each sensor with its calibration certificate.', ['Email'], ['operator']);
+}
+R.onboarding = function () {
+  var h = '<h2 class="page">Operator onboarding</h2><p class="lead">New operators register their mine when they create an account. The system generates the site content. Complete each step, then approve: the mine joins the dashboards and its account is activated.</p>';
+  var list = S.sites.slice().reverse();
+  if (!list.length) { return h + '<div class="card"><p class="muted">No operators have registered a new mine yet.</p></div>'; }
+  list.forEach(function (s) {
+    var steps = onboardSteps(s), ready = onboardReady(s), acc = S.accounts.filter(function (a) { return a.op === s.id; })[0];
+    h += '<div class="card mt"><h3>' + esc(s.name) + ', ' + esc(s.town) + ' ' + pill(s.status, s.status === 'Active' ? 'ok' : s.status === 'Rejected' ? 'bad' : 'warn') + '</h3>';
+    h += '<p class="small muted">' + esc(s.company) + '. Registered ' + ftime(s.created) + ' by ' + esc(s.requestedBy) + (acc ? ' (' + esc(acc.email) + ', account ' + esc(acc.status.toLowerCase()) + ')' : '') + '. Position ' + s.lat + ', ' + s.lon + '.</p>';
+    h += '<p class="small"><b>Generated automatically:</b> ' + esc(s.generated.join('; ')) + '.</p><table><tr><th>Step</th><th>Status</th><th class="no-print"></th></tr>';
+    steps.forEach(function (x, i) {
+      h += '<tr><td>' + (i + 1) + '. ' + esc(x[1]) + stepDetail(s, x[0]) + '</td><td>' + (x[2] ? pill('Done', 'ok') : pill('To do', 'warn')) + '</td><td class="no-print">' + (s.status === 'Onboarding' ? '<button class="btn small alt" data-onb="' + x[0] + ':' + s.id + '">' + (x[2] ? 'Edit' : 'Complete') + '</button>' : '') + '</td></tr>';
+    });
+    h += '</table>';
+    if (s.status === 'Onboarding') {
+      h += '<div class="bar mt no-print"><button class="btn" data-onbapprove="' + s.id + '"' + (ready ? '' : ' disabled title="Complete every step first"') + '>Approve operator and account</button><button class="btn alt" data-onbreject="' + s.id + '">Reject</button>' + (ready ? '' : '<span class="small muted">Approve unlocks when all five steps are done.</span>') + '</div>';
+    } else if (s.status === 'Active') { h += '<p class="small muted mt">Approved ' + ftime(s.approvedAt) + ' by ' + esc(s.approvedBy) + '.</p>'; }
+    else { h += '<p class="small muted mt">Rejected: ' + esc(s.rejectReason || '') + '</p>'; }
+    h += '</div>';
+  });
+  return h;
+};
+function stepDetail(s, k) {
+  var d = '';
+  if (k === 'eis' && s.eis) { d = 'EIS ' + esc(s.eis.ref) + ', approved ' + fdate(s.eis.approved) + ', ' + fileLink(s.eis.file); }
+  if (k === 'limits' && s.limitsConfirmed) { d = 'Confirmed ' + ftime(s.limitsConfirmed.at) + ' by ' + esc(s.limitsConfirmed.by) + '; ' + Object.keys(S.siteLimits[s.id] || {}).filter(function (pid) { var p = param(pid), o = S.siteLimits[s.id][pid]; return p && (o.min !== p.min || o.max !== p.max); }).length + ' limit(s) differ from the defaults'; }
+  if (k === 'licence' && s.licence && s.licence.no) { d = 'Licence ' + esc(s.licence.no) + (s.licence.expiry ? ', expires ' + fdate(s.licence.expiry) : ''); }
+  if (k === 'schedule' && s.scheduleConfirmed) { d = 'Confirmed ' + ftime(s.scheduleConfirmed.at); }
+  return d ? '<div class="small muted">' + d + '</div>' : '';
+}
+function onboardForm(k, s) {
+  var head = '<form id="mf" data-kind="onb-' + k + '" data-id="' + s.id + '">';
+  if (k === 'details') {
+    return ['Site details, ' + s.name, head + '<div class="form-grid">' + row('Mine or site name', '<input type="text" name="name" required value="' + esc(s.name) + '">') + row('Company', '<input type="text" name="company" required value="' + esc(s.company) + '">') + row('District or town', '<input type="text" name="town" required value="' + esc(s.town) + '">') + row('River catchment', '<input type="text" name="river" value="' + esc(s.river) + '">') + row('Latitude', '<input type="number" step="any" name="lat" required value="' + s.lat + '">') + row('Longitude', '<input type="number" step="any" name="lon" required value="' + s.lon + '">') + '</div>' + actionsFooter('Save details')];
+  }
+  if (k === 'eis') {
+    var e = s.eis || {};
+    return ['Approved EIS, ' + s.name, head + '<p class="small muted">Upload the Environmental Impact Statement as approved by ZEMA. Its conditions set the site limits and monitoring plan.</p><div class="form-grid">' + row('EIS reference number', '<input type="text" name="ref" required value="' + esc(e.ref || '') + '">') + row('Date approved', '<input type="date" name="approved" required value="' + (e.approved ? isoDate(e.approved) : '') + '">') + '</div>' + row('Approved EIS document (PDF, up to 2 MB)' + (e.file ? ', current: ' + e.file.name : ''), '<input type="file" name="file"' + (e.file ? '' : ' required') + '>') + actionsFooter('Save EIS')];
+  }
+  if (k === 'limits') {
+    var lim = S.siteLimits[s.id] || {}, b = head + '<p class="small muted">Defaults from the limit register are filled in. Change any value to match the EIS conditions and licence, leave a box empty for no limit, then confirm.</p><table><tr><th>Parameter</th><th>Unit</th><th>Minimum</th><th>Maximum</th></tr>';
+    S.params.forEach(function (p) { var o = lim[p.id] || { min: p.min, max: p.max }; b += '<tr><td>' + esc(p.label) + '</td><td>' + esc(p.unit) + '</td><td><input type="number" step="any" name="mn_' + p.id + '" value="' + (o.min === null ? '' : o.min) + '" style="width:90px"></td><td><input type="number" step="any" name="mx_' + p.id + '" value="' + (o.max === null ? '' : o.max) + '" style="width:90px"></td></tr>'; });
+    return ['Limit register, ' + s.name, b + '</table><label class="small mt" style="display:flex;gap:6px;align-items:center"><input type="checkbox" name="confirm" required> I have checked these limits against the approved EIS and licence conditions</label>' + actionsFooter('Confirm limits')];
+  }
+  if (k === 'licence') {
+    var l = s.licence || {};
+    return ['Licence, ' + s.name, head + '<div class="form-grid">' + row('Licence number', '<input type="text" name="no" required value="' + esc(l.no || '') + '">') + row('Licence type', '<input type="text" name="type" required value="' + esc(l.type || 'Effluent discharge licence') + '">') + row('Issued', '<input type="date" name="issued" required value="' + (l.issued ? isoDate(l.issued) : isoDate(now())) + '">') + row('Expires', '<input type="date" name="expiry" required value="' + (l.expiry ? isoDate(l.expiry) : '') + '">') + '</div>' + row('Conditions, one per line', '<textarea name="conditions" rows="4">' + esc((l.conditions || []).join('\n') || 'Monitor pH, conductivity and turbidity continuously at the final effluent outlet\nSubmit a monthly monitoring report by the 10th of the following month\nSample heavy metals at the outlet and downstream point every 30 days') + '</textarea>') + actionsFooter('Save licence')];
+  }
+  return ['Monitoring points and schedule, ' + s.name, head + '<table><tr><th>Point</th><th>Continuous parameters</th><th>Laboratory sampling</th></tr>' + POINTS.map(function (pt) { return '<tr><td>' + esc(pt.code + ' ' + pt.name) + '</td><td>' + esc(pt.live.map(function (pm) { return param(pm).label; }).join(', ')) + '</td><td>Every ' + (pt.id === 'dam' ? 90 : 30) + ' days</td></tr>'; }).join('') + '</table><p class="small muted">Sensors for the continuous parameters are registered by the operator after approval and approved by ZEMA.</p>' + actionsFooter('Confirm points and schedule')];
+}
+function submitOnboard(kind, f, v, u, done, err) {
+  var s = siteById(f.getAttribute('data-id')), k = kind.slice(4);
+  if (k === 'details') { s.name = v('name'); s.company = v('company'); s.town = v('town'); s.river = v('river'); s.lat = parseFloat(v('lat')); s.lon = parseFloat(v('lon')); logAct(u, s.id, 'Updated site details for ' + s.name); return done(); }
+  if (k === 'limits') {
+    var lim = {}, bad = '';
+    S.params.forEach(function (p) { var mn = v('mn_' + p.id), mx = v('mx_' + p.id); lim[p.id] = { min: mn === '' ? null : parseFloat(mn), max: mx === '' ? null : parseFloat(mx) }; if (lim[p.id].min !== null && lim[p.id].max !== null && lim[p.id].min > lim[p.id].max) { bad = p.label; } });
+    if (bad) { return err(bad + ': the minimum is above the maximum.'); }
+    S.siteLimits[s.id] = lim; s.limitsConfirmed = { by: who(u), at: now() }; logAct(u, s.id, 'Confirmed site limit register for ' + s.name + ' against the EIS'); return done();
+  }
+  if (k === 'licence') {
+    var iss = parseDate(v('issued')), exp = parseDate(v('expiry'));
+    if (exp <= iss) { return err('The expiry date must be after the issue date.'); }
+    s.licence = { no: v('no'), type: v('type'), issued: iss, expiry: exp, conditions: lines(v('conditions')) }; logAct(u, s.id, 'Entered licence ' + v('no') + ' for ' + s.name); return done();
+  }
+  if (k === 'schedule') { s.scheduleConfirmed = { by: who(u), at: now() }; logAct(u, s.id, 'Confirmed monitoring points and sampling schedule for ' + s.name); return done(); }
+  if (k === 'eis') {
+    readFile(f.elements.file.files[0]).then(function (file) {
+      if (!file && !(s.eis && s.eis.file)) { return err('Attach the approved EIS document.'); }
+      s.eis = { ref: v('ref'), approved: parseDate(v('approved')), file: file || s.eis.file, by: who(u), at: now() };
+      logAct(u, s.id, 'Uploaded approved EIS ' + v('ref') + ' for ' + s.name); done();
+    }).catch(function (e) { err(e.message); });
+  }
+}
+
+/* ---------- sensors ---------- */
+function deviceHealthText(d) {
+  if (d.status !== 'Live' && d.status !== 'Offline') { return '<span class="muted small">Not connected</span>'; }
+  return d.params.map(function (pm) { var hh = health(d.op, d.point, pm); return pill(param(pm).label + ': ' + hh.t, hh.c); }).join(' ');
+}
+R.sensors = function () {
+  var ops = ui.role === 'operator' ? [ui.op] : OPERATORS.filter(function (o) { return !ui.focus || o.id === ui.focus; }).map(function (o) { return o.id; });
+  var list = S.devices.filter(function (d) { return ops.indexOf(d.op) >= 0; });
+  var h = '<h2 class="page">Sensors and connections</h2><p class="lead">Continuous readings count only from sensors approved by ZEMA. 1. The operator registers each sensor with its calibration certificate. 2. ZEMA checks it against the sensor specifications and approves. 3. The operator connects it using the details shown. 4. The first reading makes it Live.</p>';
+  h += ui.role === 'operator' ? '<div class="bar no-print"><button class="btn" data-open="device">Register a sensor</button></div>' : '';
+  h += '<div class="card"><table><tr><th>Device</th><th>Point and parameters</th><th>Instrument</th><th>Connection</th><th>Status</th><th>Health</th><th class="no-print"></th></tr>';
+  if (!list.length) { h += '<tr><td colspan="7" class="muted">No sensors registered yet.</td></tr>'; }
+  list.forEach(function (d) {
+    var b = '';
+    if (ui.role === 'inspector' && d.status === 'Pending ZEMA approval') { b = '<button class="btn small" data-devapprove="' + d.id + '">Approve</button><button class="btn small alt" data-devreject="' + d.id + '">Reject</button>'; }
+    if (ui.role === 'operator' && d.status !== 'Pending ZEMA approval' && d.status !== 'Rejected') { b = '<button class="btn small alt" data-devconnect="' + d.id + '">Connection details</button>'; }
+    if (ui.role === 'operator' && d.status === 'Approved, awaiting first data') { b += '<button class="btn small" data-devtest="' + d.id + '">Send test reading</button>'; }
+    if (ui.role === 'operator' && d.status === 'Live') { b += '<button class="btn small alt" data-devoff="' + d.id + '">Simulate offline</button>'; }
+    if (ui.role === 'operator' && d.status === 'Offline') { b += '<button class="btn small" data-devon="' + d.id + '">Reconnect</button>'; }
+    h += '<tr><td>' + esc(d.id) + sampleTag(d) + (ui.role === 'inspector' ? '<div class="small muted">' + esc(opName(d.op)) + '</div>' : '') + '</td><td>' + esc(ptName(d.point)) + '<div class="small muted">' + esc(d.params.map(function (pm) { return param(pm).label; }).join(', ')) + '</div></td><td class="small">' + esc(d.make + ' ' + d.model) + '<div class="muted">Serial ' + esc(d.serial) + ', calibrated ' + fdate(d.calibDate) + (d.calibFile ? ', ' + fileLink(d.calibFile) : '') + '</div></td><td class="small">' + esc(CONNECT[d.method].label) + (d.platform ? '<div class="muted">' + esc(d.platform) + '</div>' : '') + '</td><td>' +
+      pill(d.status, d.status === 'Live' ? 'ok' : d.status === 'Rejected' || d.status === 'Offline' ? 'bad' : 'warn') + (d.comment ? '<div class="small muted">' + esc(d.comment) + '</div>' : '') + '</td><td>' + deviceHealthText(d) + '</td><td class="no-print">' + b + '</td></tr>';
+  });
+  return h + '</table></div>';
+};
+FORMS.device = function () {
+  var pts = POINTS.map(function (pt) { return '<option value="' + pt.id + '">' + esc(pt.code + ' ' + pt.name) + '</option>'; }).join('');
+  var pms = S.params.filter(function (p) { return p.kind === 'live'; }).map(function (p) { return '<label class="small" style="display:inline-flex;gap:4px;margin-right:12px"><input type="checkbox" name="pm_' + p.id + '"> ' + esc(p.label) + '</label>'; }).join('');
+  return ['Register a sensor, ' + opName(ui.op), '<form id="mf" data-kind="device"><div class="form-grid">' + row('Monitoring point', '<select name="point">' + pts + '</select>') + row('Connection method', '<select name="method" id="dev-method">' + Object.keys(CONNECT).map(function (k) { return '<option value="' + k + '">' + esc(CONNECT[k].label) + '</option>'; }).join('') + '</select>') +
+    row('Make', '<input type="text" name="make" required>') + row('Model', '<input type="text" name="model" required>') + row('Serial number', '<input type="text" name="serial" required>') + row('Date last calibrated', '<input type="date" name="calib" required value="' + isoDate(now()) + '">') + '</div>' +
+    '<div id="dev-platform" style="display:none">' + row('IoT platform', '<select name="platform">' + PLATFORMS.map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '</select>') + '</div>' +
+    row('Parameters measured (only those the point monitors continuously are accepted)', '<div>' + pms + '</div>') + row('Calibration certificate (PDF, up to 2 MB)', '<input type="file" name="file" required>') + '<p class="small muted">ZEMA checks the instrument against its sensor specifications before readings count.</p>' + actionsFooter('Send to ZEMA for approval')];
+};
+function submitDevice(f, v, u, done, err) {
+  var pt = ptById(v('point')), pms = pt.live.filter(function (pm) { return f.elements['pm_' + pm] && f.elements['pm_' + pm].checked; });
+  if (!pms.length) { return err('Tick at least one parameter that ' + pt.name + ' monitors continuously (' + pt.live.map(function (pm) { return param(pm).label; }).join(', ') + ').'); }
+  readFile(f.elements.file.files[0]).then(function (file) {
+    var d = { id: nextRef('DEV'), op: ui.op, point: pt.id, params: pms, make: v('make'), model: v('model'), serial: v('serial'), method: v('method'), platform: v('method') === 'Bridge' ? v('platform') : '', calibDate: parseDate(v('calib')), calibFile: file,
+      status: 'Pending ZEMA approval', key: '', by: who(u), t: now(), reviewBy: '', reviewAt: null, comment: '', firstData: null };
+    S.devices.push(d); notify('Sensor approval request', d.op, 'Sensor awaiting approval: ' + d.id + ', ' + opName(d.op), d.make + ' ' + d.model + ', serial ' + d.serial + ', at ' + pt.name + '. Check it against the ZEMA sensor specifications in Sensors.', ['Email'], ['zema']); logAct(u, d.op, 'Registered sensor ' + d.id + ' at ' + pt.name + ' (' + d.make + ' ' + d.model + '), sent to ZEMA for approval'); ui.tab = 'sensors'; done();
+    flash('Sensor sent to ZEMA for approval. Connection details appear once it is approved.');
+  }).catch(function (e) { err(e.message); });
+}
+function devById(id) { return S.devices.filter(function (d) { return d.id === id; })[0]; }
+function connectionDetails(d) {
+  var topic = 'ecm/' + d.op + '/' + d.point + '/' + d.id + '/readings', sample = '{"device": "' + d.id + '", "t": "2026-11-26T08:00:00Z", "readings": {' + d.params.map(function (pm) { return '"' + pm + '": ' + (pm === 'ph' ? '7.4' : pm === 'ec' ? '612' : pm === 'turb' ? '18' : '2.1'); }).join(', ') + '}}';
+  var h = '<p class="small muted">' + esc(CONNECT[d.method].note) + ' Demonstration addresses: the real service comes with version 0.5. Keep the device key secret.</p><dl class="kv small">';
+  if (d.method === 'MQTT') { h += '<dt>Broker</dt><dd>' + DEMO_HOST.mqtt + '</dd><dt>Client ID and user name</dt><dd>' + esc(d.id) + '</dd><dt>Password (device key)</dt><dd><code>' + esc(d.key) + '</code></dd><dt>Topic</dt><dd><code>' + esc(topic) + '</code></dd><dt>Interval</dt><dd>Every 5 minutes, or on change</dd>'; }
+  if (d.method === 'HTTPS') { h += '<dt>Address</dt><dd>POST ' + DEMO_HOST.https + '</dd><dt>Header</dt><dd><code>X-Device-Key: ' + esc(d.key) + '</code></dd><dt>Interval</dt><dd>Every 5 minutes; send any missed readings with their times</dd>'; }
+  if (d.method === 'Bridge') { h += '<dt>Platform</dt><dd>' + esc(d.platform) + '</dd><dt>Forward to</dt><dd>' + DEMO_HOST.https + ' with header <code>X-Device-Key: ' + esc(d.key) + '</code></dd><dt>How</dt><dd>' + esc(d.platform === 'ThingsBoard' ? 'Add a REST API call node to the device rule chain' : d.platform === 'AWS IoT Core' ? 'Add an IoT rule with an HTTPS action' : d.platform === 'Azure IoT Hub' ? 'Route device messages to an Azure Function that posts them' : 'Use the platform\'s webhook or HTTPS forwarding') + '</dd>'; }
+  return h + '<dt>Message format</dt><dd><code>' + esc(sample) + '</code></dd></dl>';
+}
+
+/* ---------- site twin ---------- */
+function pointState(op, pt) {
+  var worst = 'none';
+  pt.live.forEach(function (pm) {
+    if (!deviceFor(op, pt.id, pm)) { return; }
+    if (!liveFeed(op, pt.id, pm)) { worst = worst === 'breach' ? worst : 'offline'; return; }
+    var s = series[skey(op, pt.id, pm)], st = s ? s.state : 'ok';
+    if (st === 'breach') { worst = 'breach'; } else if (st === 'warn' && worst !== 'breach') { worst = 'warn'; } else if (worst === 'none') { worst = 'ok'; }
+  });
+  return worst;
+}
+var TWIN_POS = { dam: { x: 150, y: 120 }, out: { x: 400, y: 200 }, str: { x: 560, y: 286 } };
+var TWIN_COL = { ok: '#1e7a46', warn: '#c98a00', breach: '#b3261e', offline: '#7a7f86', none: '#b8bdc3' };
+function twinOpId() { return ui.role === 'operator' ? ui.op : (ui.focus || ui.twinOp || OPERATORS[0].id); }
+function ptLatLon(op, pt) { return { lat: (op.lat + (pt.dLat || 0)).toFixed(5), lon: (op.lon + (pt.dLon || 0)).toFixed(5) }; }
+R.twin = function () {
+  var opId = twinOpId(), op = opById(opId), pt = ptById(ui.twinPt || 'out'), ll = ptLatLon(op, pt);
+  var h = '<h2 class="page">Site twin</h2><p class="lead">The site on satellite imagery, linked to a live schematic. Each monitoring point is coloured by its latest reading and sensor health. Click a point to centre the satellite view on it and see its details.</p>';
+  if (ui.role === 'inspector' && !ui.focus) { h += '<div class="bar no-print"><select id="twin-op">' + OPERATORS.map(function (o) { return '<option value="' + o.id + '"' + (o.id === opId ? ' selected' : '') + '>' + esc(o.name) + '</option>'; }).join('') + '</select></div>'; }
+  h += '<div class="card"><h3>Satellite view, ' + esc(pt.code + ' ' + pt.name) + '</h3><iframe title="Satellite imagery of ' + esc(op.name) + ' at ' + esc(pt.name) + '" src="https://maps.google.com/maps?q=' + ll.lat + ',' + ll.lon + '&t=k&z=16&output=embed" style="width:100%;height:340px;border:0;border-radius:6px" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>' +
+    '<p class="small muted">Imagery: Google Maps, centred on ' + ll.lat + ', ' + ll.lon + '. Needs an internet connection. ' + (op.isNew ? 'Coordinates from the operator\'s registration; ZEMA confirms them on the first inspection.' : 'Demonstration coordinates; real points use surveyed GPS positions.') + ' <a href="https://www.google.com/maps/search/?api=1&query=' + ll.lat + ',' + ll.lon + '" target="_blank" rel="noopener">Open in Google Maps</a></p></div>';
+  return h + '<div id="twin-live" class="mt">' + twinLive() + '</div>';
+};
+function twinLive() {
+  var opId = twinOpId(), op = opById(opId), h = '';
+  var svg = '<svg viewBox="0 0 760 360" width="100%" role="img" aria-label="Site schematic for ' + esc(op.name) + '"><rect x="1" y="1" width="758" height="358" rx="10" fill="#f4f7f5" stroke="#d9e0dc"/>';
+  svg += '<path d="M40 330 C 200 300, 420 330, 560 285 S 720 250, 750 240" fill="none" stroke="#7fb3d5" stroke-width="16" stroke-linecap="round"/><text x="70" y="300" font-size="12" fill="#2d5f7f">River, flowing east</text>';
+  svg += '<polygon points="60,60 260,50 280,180 70,200" fill="#d8cfbf" stroke="#9c8f78"/><text x="90" y="80" font-size="13" fill="#5b5040">Tailings storage facility</text>';
+  svg += '<rect x="330" y="80" width="120" height="60" rx="4" fill="#e3e7ea" stroke="#9aa3ab"/><text x="352" y="115" font-size="12" fill="#444">Process plant</text>';
+  svg += '<path d="M265 150 L 400 200" fill="none" stroke="#9aa3ab" stroke-width="5" stroke-dasharray="8 5"/><text x="300" y="200" font-size="11" fill="#555">Decant return</text><path d="M400 200 C 430 240, 470 280, 500 302" fill="none" stroke="#9aa3ab" stroke-width="5"/><text x="300" y="262" font-size="11" fill="#555">Effluent channel</text>';
+  svg += '<text x="700" y="40" font-size="13" fill="#444">N</text><path d="M705 46 L 705 70" stroke="#444" stroke-width="2"/><path d="M699 54 L 705 44 L 711 54" fill="none" stroke="#444" stroke-width="2"/>';
+  POINTS.forEach(function (pt) {
+    var p = TWIN_POS[pt.id], st = pointState(opId, pt), sel = ui.twinPt === pt.id;
+    var vals = pt.live.map(function (pm) { var s = series[skey(opId, pt.id, pm)], pp = param(pm); return liveFeed(opId, pt.id, pm) && s ? pp.label.replace('Electrical conductivity', 'EC') + ' ' + fmtVal(pp, s.values[s.values.length - 1]) : pp.label.replace('Electrical conductivity', 'EC') + ' no data'; });
+    svg += '<g data-twin="' + pt.id + '" style="cursor:pointer"><circle cx="' + p.x + '" cy="' + p.y + '" r="' + (sel ? 17 : 14) + '" fill="' + TWIN_COL[st] + '" stroke="#fff" stroke-width="3"/>';
+    svg += '<rect x="' + (p.x + 22) + '" y="' + (p.y - 30) + '" width="150" height="' + (18 + vals.length * 15) + '" rx="5" fill="#fff" stroke="#d9e0dc"/><text x="' + (p.x + 30) + '" y="' + (p.y - 15) + '" font-size="12" font-weight="bold" fill="#1d3b2a">' + esc(pt.code) + '</text>';
+    vals.forEach(function (t, i) { svg += '<text x="' + (p.x + 30) + '" y="' + (p.y + i * 15) + '" font-size="11" fill="#333">' + esc(t) + '</text>'; });
+    svg += '</g>';
+  });
+  svg += '</svg>';
+  h += '<div class="card"><h3>Live schematic, ' + esc(op.name) + ', ' + esc(op.town) + '</h3>' + svg + '<p class="small muted">Green: within limits. Amber: early warning. Red: limit breach. Dark grey: sensor offline. Light grey: no approved sensor yet. Positions are schematic.</p></div>';
+  var pt = ptById(ui.twinPt || 'out');
+  h += '<div class="card mt"><h3>' + esc(pt.code + ' ' + pt.name) + '</h3><table><tr><th>Parameter</th><th>Latest</th><th>Site limit</th><th>Sensor</th><th>Health</th></tr>';
+  pt.live.forEach(function (pm) {
+    var d = deviceFor(opId, pt.id, pm), s = series[skey(opId, pt.id, pm)], p = pfor(param(pm), opId), hh = health(opId, pt.id, pm);
+    h += '<tr><td>' + esc(p.label) + '</td><td class="nw">' + (liveFeed(opId, pt.id, pm) && s ? fmtVal(p, s.values[s.values.length - 1]) : '<span class="muted">No data</span>') + '</td><td class="nw">' + esc(limitText(p)) + '</td><td class="small">' + (d ? esc(d.id + ', ' + d.make + ' ' + d.model) : '<span class="muted">None approved</span>') + '</td><td>' + pill(hh.t, hh.c) + '</td></tr>';
+  });
+  var open = S.items.filter(function (it) { return it.op === opId && it.point === pt.id && it.status !== 'Closed'; }).length;
+  var last = S.results.filter(function (r) { return r.op === opId && r.point === pt.id; })[0];
+  return h + '</table><p class="small mt">Open items at this point: ' + open + '. Last field or laboratory result: ' + (last ? esc(last.id) + ', ' + fdate(last.sampled) + (last.breaches.length ? ', ' + last.breaches.length + ' breach(es)' : ', within limits') : 'none yet') + '.</p></div>';
+};
+
+/* ---------- pop up prompts after sign in ---------- */
+function attentionPrompt() {
+  var a = currentAccount(); if (!a) { return; }
+  var lines = [], btns = [];
+  if (a.role === 'inspector') {
+    var onb = S.sites.filter(function (s) { return s.status === 'Onboarding'; }), devs = S.devices.filter(function (d) { return d.status === 'Pending ZEMA approval'; }), accs = S.accounts.filter(function (x) { return x.status === 'Pending approval' && !(siteById(x.op) && siteById(x.op).status === 'Onboarding'); });
+    if (a.admin && onb.length) { lines.push(onb.length + ' new operator(s) awaiting onboarding: ' + onb.map(function (s) { return s.name; }).join(', ') + '. Upload the approved EIS, check the limits and licence, then approve.'); btns.push(['onboarding', 'Open onboarding']); }
+    if (a.admin && accs.length) { lines.push(accs.length + ' account(s) awaiting approval.'); btns.push(['accounts', 'Open user accounts']); }
+    if (devs.length) { lines.push(devs.length + ' sensor(s) awaiting ZEMA approval.'); btns.push(['sensors', 'Open sensors']); }
+  } else {
+    var mine = S.devices.filter(function (d) { return d.op === a.op; });
+    if (!mine.some(function (d) { return d.status === 'Live'; })) { lines.push('Welcome. Your site is approved. Next, register each sensor with its calibration certificate. ZEMA approves it, then you connect it using the details shown, and live readings start.'); btns.push(['sensors', 'Register sensors']); }
+    var ready = mine.filter(function (d) { return d.status === 'Approved, awaiting first data'; });
+    if (ready.length) { lines.push(ready.length + ' sensor(s) approved by ZEMA and ready to connect.'); btns.push(['sensors', 'Open sensors']); }
+    if (mine.some(function (d) { return d.status === 'Offline'; })) { lines.push('A sensor is offline. Its readings are missing from the record.'); btns.push(['sensors', 'Open sensors']); }
+  }
+  if (!lines.length) { return; }
+  var seen = {}; btns = btns.filter(function (b) { if (seen[b[0]]) { return false; } seen[b[0]] = 1; return true; });
+  openModal('Needs your attention', lines.map(function (x) { return '<p>' + esc(x) + '</p>'; }).join('') + '<div class="form-actions">' + btns.map(function (b) { return '<button type="button" class="btn" data-go="' + b[0] + '">' + esc(b[1]) + '</button>'; }).join('') + '<button type="button" class="btn alt" data-cancel="1">Later</button></div>');
+}
+
+/* ---------------- alerts, monthly reports, public status page and field mode ----------------
+   Alerts: every alert is written to the outbox with its channel, recipients and text. In this
+   prototype the outbox is shown on screen; version 0.3 sends email (SMTP) and SMS (gateway).
+   Reports: the operator generates a monthly or quarterly report and submits it to ZEMA; the
+   submitted copy is frozen with a SHA-256 fingerprint. Public page: status per mine without
+   raw readings. Field mode: phone friendly entry with GPS and a queue for entries made offline. */
+
+/* ---------- alerts ---------- */
+function recipientsFor(op, who) {
+  var out = [];
+  if (who.indexOf('operator') >= 0) { S.accounts.filter(function (a) { return a.role === 'operator' && a.op === op && a.status === 'Active'; }).forEach(function (a) { out.push(a.email); }); }
+  if (who.indexOf('zema') >= 0) { S.accounts.filter(function (a) { return a.role === 'inspector' && a.status === 'Active' && !a.admin; }).forEach(function (a) { out.push(a.email); }); }
+  if (who.indexOf('admin') >= 0) { S.accounts.filter(function (a) { return a.admin && a.status === 'Active'; }).forEach(function (a) { out.push(a.email); }); }
+  return out;
+}
+function sms(op, who) { var r = []; if (who.indexOf('operator') >= 0 && op) { r.push('Operator duty phone, ' + opName(op)); } if (who.indexOf('zema') >= 0) { r.push('ZEMA duty inspector phone'); } return r; }
+function notify(event, op, subject, body, channels, who) {
+  S.outbox = S.outbox || [];
+  channels.forEach(function (ch) {
+    var to = ch === 'SMS' ? sms(op, who) : recipientsFor(op, who);
+    if (!to.length) { return; }
+    S.outbox.unshift({ id: nextRef('MSG'), t: now(), channel: ch, event: event, op: op || '', to: to, subject: subject, body: ch === 'SMS' ? (subject + '. ' + body).slice(0, 160) : body });
+  });
+  if (S.outbox.length > 400) { S.outbox.length = 400; }
+}
+function alertItem(it) {
+  if (it.sample || warmup || it.level !== 'Limit breach') { return; }
+  notify('Limit breach', it.op, 'Limit breach at ' + opName(it.op) + (it.point ? ', ' + ptName(it.point) : ''), it.text + '. Reference ' + it.id + '. Corrective action due ' + fdate(it.due) + '.', ['SMS', 'Email'], ['operator', 'zema']);
+}
+function overdueDigest(force) {
+  var today = isoDate(now());
+  if (!force && S.lastDigest === today) { return 0; }
+  S.lastDigest = today;
+  var n = 0;
+  OPERATORS.forEach(function (op) {
+    var items = S.items.filter(function (it) { return it.op === op.id && overdue(it); });
+    var samples = S.schedule.filter(function (s) { return s.op === op.id && now() > s.last + s.freq * DAY; });
+    if (!items.length && !samples.length) { return; }
+    var lines = items.map(function (it) { return it.id + ': ' + it.text + ' (due ' + fdate(it.due) + ')'; }).concat(samples.map(function (s) { return 'Laboratory sample overdue at ' + ptName(s.point) + ' (every ' + s.freq + ' days)'; }));
+    notify('Daily overdue digest', op.id, 'Overdue items, ' + op.name + ', ' + fdate(now()), lines.join('\n'), ['Email'], ['operator', 'zema']);
+    n += 1;
+  });
+  return n;
+}
+R.outbox = function () {
+  var list = (S.outbox || []).filter(function (m) { return ui.role !== 'operator' || m.op === ui.op; }).filter(function (m) { return !ui.outCh || m.channel === ui.outCh; });
+  var h = '<h2 class="page">Alerts outbox</h2><p class="lead">Email and SMS alerts the system sends: limit breaches, a daily overdue digest, onboarding and sensor approvals, incidents and community concerns. In this prototype they are shown here and not sent; version 0.3 sends them by email and through an SMS gateway.</p>';
+  h += '<div class="bar no-print"><select id="out-ch" aria-label="Channel"><option value="">Email and SMS</option><option' + (ui.outCh === 'Email' ? ' selected' : '') + '>Email</option><option' + (ui.outCh === 'SMS' ? ' selected' : '') + '>SMS</option></select>' + (ui.role === 'inspector' ? '<button class="btn alt" id="digest-btn">Send daily overdue digest now</button>' : '') + '</div>';
+  if (!list.length) { return h + '<div class="card"><p class="muted">No alerts yet.</p></div>'; }
+  h += '<div class="card"><table><tr><th>Sent</th><th>Channel</th><th>Event</th><th>To</th><th>Message</th></tr>';
+  list.slice(0, 100).forEach(function (m) { h += '<tr><td class="nw small">' + ftime(m.t) + '</td><td>' + pill(m.channel, m.channel === 'SMS' ? 'warn' : 'neutral') + '</td><td class="small">' + esc(m.event) + '</td><td class="small">' + esc(m.to.join(', ')) + '</td><td class="small"><b>' + esc(m.subject) + '</b><div style="white-space:pre-line">' + esc(m.body) + '</div></td></tr>'; });
+  return h + '</table></div>';
+};
+
+/* ---------- monthly and quarterly report ---------- */
+function periodList() {
+  var out = [], d = new Date(now());
+  for (var i = 0; i < 12; i++) { var m = new Date(d.getFullYear(), d.getMonth() - i, 1); out.push({ key: 'M' + m.getFullYear() + '-' + pad(m.getMonth() + 1), label: MON[m.getMonth()] + ' ' + m.getFullYear(), from: m.getTime(), to: new Date(m.getFullYear(), m.getMonth() + 1, 1).getTime(), type: 'Monthly monitoring report' }); }
+  for (var q = 0; q < 4; q++) { var qs = new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3 - q * 3, 1); out.push({ key: 'Q' + qs.getFullYear() + '-' + (Math.floor(qs.getMonth() / 3) + 1), label: 'Quarter ' + (Math.floor(qs.getMonth() / 3) + 1) + ', ' + qs.getFullYear(), from: qs.getTime(), to: new Date(qs.getFullYear(), qs.getMonth() + 3, 1).getTime(), type: 'Quarterly monitoring report' }); }
+  return out;
+}
+function periodByKey(k) { return periodList().filter(function (p) { return p.key === k; })[0] || periodList()[0]; }
+function monthlyBody(op, per) {
+  var inP = function (t) { return t >= per.from && t < per.to; };
+  var res = S.results.filter(function (r) { return r.op === op.id && inP(r.sampled); });
+  var items = S.items.filter(function (it) { return it.op === op.id && inP(it.t); });
+  var inc = S.incidents.filter(function (r) { return r.op === op.id && inP(r.t); });
+  var devs = S.devices.filter(function (d) { return d.op === op.id; });
+  var lic = licStatus(op);
+  var h = '<div class="report"><h2>' + esc(per.type) + ', ' + esc(per.label) + '</h2><div class="muted">' + esc(op.company) + ' (' + esc(op.name) + '), ' + esc(op.town) + '. Licence ' + esc(op.licence.no) + ', ' + lic.p.replace(/<[^>]+>/g, '') + '. Period ' + fdate(per.from) + ' to ' + fdate(per.to - 1) + '. Generated ' + ftime(now()) + '.</div>';
+  h += '<h3>1. Summary</h3><p>' + res.length + ' field and laboratory result(s), of which ' + res.filter(function (r) { return r.breaches.length; }).length + ' with breaches. ' + items.filter(function (i) { return i.level === 'Limit breach'; }).length + ' limit breach item(s) and ' + items.filter(function (i) { return i.level === 'Early warning'; }).length + ' early warning(s) raised; ' + items.filter(function (i) { return i.status === 'Closed'; }).length + ' of ' + items.length + ' item(s) raised in the period are closed. ' + inc.length + ' incident(s). Live readings within limits in the recent window: ' + score(op.id).toFixed(1) + '%.</p>';
+  h += '<h3>2. Field and laboratory results</h3>' + (res.length ? '<table><tr><th>Reference</th><th>Type</th><th>Point</th><th>Sampled</th><th>Results</th><th>Breaches</th></tr>' + res.map(function (r) { return '<tr><td>' + esc(r.id) + '</td><td>' + esc((r.mode || 'Laboratory') + (r.byRole === 'inspector' ? ', ZEMA' : '')) + '</td><td>' + esc(ptName(r.point)) + '</td><td>' + fdate(r.sampled) + '</td><td class="small">' + esc(Object.keys(r.values).map(function (pid) { var p = param(pid); return p ? p.label + ' ' + fmtVal(pfor(p, op.id), r.values[pid]) : ''; }).join('; ')) + '</td><td>' + (r.breaches.length ? esc(r.breaches.map(function (b) { return param(b) ? param(b).label : b; }).join(', ')) : 'None') + '</td></tr>'; }).join('') + '</table>' : '<p>No results in this period.</p>');
+  h += '<h3>3. Breaches, warnings and actions</h3>' + (items.length ? '<table><tr><th>Reference</th><th>Raised</th><th>Level</th><th>Description</th><th>Status</th></tr>' + items.map(function (it) { return '<tr><td>' + esc(it.id) + '</td><td>' + fdate(it.t) + '</td><td>' + esc(it.level) + '</td><td class="small">' + esc(it.text) + (it.action ? '<div class="muted">Action: ' + esc(it.action) + '</div>' : '') + '</td><td>' + esc(overdue(it) ? 'Overdue' : it.status) + '</td></tr>'; }).join('') + '</table>' : '<p>No items raised in this period.</p>');
+  h += '<h3>4. Incidents</h3>' + (inc.length ? '<ul>' + inc.map(function (r) { return '<li>' + esc(r.id + ', ' + r.kind + ', ' + fdate(r.t) + ': ' + r.desc + ' Status: ' + r.status) + '</li>'; }).join('') + '</ul>' : '<p>No incidents reported.</p>');
+  h += '<h3>5. Sensors</h3><table><tr><th>Device</th><th>Point</th><th>Parameters</th><th>Status</th><th>Calibrated</th></tr>' + devs.map(function (d) { return '<tr><td>' + esc(d.id) + '</td><td>' + esc(ptName(d.point)) + '</td><td>' + esc(d.params.map(function (pm) { return param(pm).label; }).join(', ')) + '</td><td>' + esc(d.status) + '</td><td>' + fdate(d.calibDate) + '</td></tr>'; }).join('') + '</table>';
+  var su = aiSurrogates(op.id).filter(function (x) { return x.over || x.near; });
+  h += '<h3>6. Indicative AI notes</h3><p class="small">' + (su.length ? 'Surrogate estimates near or above limits: ' + esc(su.map(function (x) { return x.param.label + ' at ' + ptName(x.point); }).join('; ')) + '. ' : 'No surrogate estimates near limits. ') + 'Indicative only; field and laboratory results above are the compliance record.</p>';
+  return h + '<p class="small muted">Demonstration data. Limits are the site limits set from the approved EIS where onboarding applies, otherwise demonstration values.</p></div>';
+}
+R.monthly = function () {
+  var opId = ui.role === 'operator' ? ui.op : (ui.focus || ui.repOp || OPERATORS[0].id), op = opById(opId), per = periodByKey(ui.period);
+  var sub = S.docs.filter(function (d) { return d.op === opId && d.periodKey === per.key && d.generated; });
+  var h = '<h2 class="page">Monthly report</h2><p class="lead">Generate the monitoring report for a month or quarter from the records. ' + (ui.role === 'operator' ? 'Check the preview, then submit it to ZEMA. The submitted copy is frozen with a fingerprint and appears in the Reports register for review.' : 'Generate the report for any mine.') + '</p>';
+  h += '<div class="bar no-print">' + (ui.role === 'inspector' && !ui.focus ? '<select id="mr-op">' + OPERATORS.map(function (o) { return '<option value="' + o.id + '"' + (o.id === opId ? ' selected' : '') + '>' + esc(o.name) + '</option>'; }).join('') + '</select>' : '') +
+    '<select id="mr-period" aria-label="Period">' + periodList().map(function (p) { return '<option value="' + p.key + '"' + (p.key === per.key ? ' selected' : '') + '>' + esc(p.label) + '</option>'; }).join('') + '</select><button class="btn alt" id="print-btn">Print or save as PDF</button>' +
+    (ui.role === 'operator' ? '<button class="btn" id="mr-submit">' + (sub.length ? 'Submit a revision to ZEMA' : 'Submit to ZEMA') + '</button>' : '') + '</div>';
+  if (sub.length) { h += '<div class="note">Already submitted for this period: ' + sub.map(function (d) { return esc(d.id) + ' on ' + ftime(d.t) + ' (' + esc(d.status) + ')'; }).join('; ') + '.</div>'; }
+  return h + '<div class="card mt">' + monthlyBody(op, per) + '</div>';
+};
+function sha256(text) {
+  if (!window.crypto || !crypto.subtle) { return Promise.resolve(''); }
+  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)).then(function (b) { return Array.prototype.map.call(new Uint8Array(b), function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); });
+}
+function submitMonthly() {
+  var op = opById(ui.op), per = periodByKey(ui.period), u = user();
+  var prev = S.docs.filter(function (d) { return d.op === op.id && d.periodKey === per.key && d.generated; }).length;
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(per.type + ', ' + per.label + ', ' + op.name) + '</title><style>body{font:13px Arial,sans-serif;margin:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:4px;text-align:left}</style></head><body>' + monthlyBody(op, per) + '</body></html>';
+  sha256(html).then(function (hash) {
+    var file = { name: (op.name + ' ' + per.label + (prev ? ' revision ' + prev : '')).replace(/[^A-Za-z0-9 -]/g, '').replace(/\s+/g, '-').toLowerCase() + '.html', size: html.length, type: 'text/html', data: 'data:text/html;charset=utf-8,' + encodeURIComponent(html) };
+    var rec = api.addDoc({ op: op.id, role: 'operator', title: per.type + ', ' + per.label + (prev ? ' (revision ' + prev + ')' : ''), type: per.type, period: per.label, notes: 'Generated from the system records and frozen at submission. SHA-256 ' + hash, file: file }, u, now());
+    rec.generated = true; rec.periodKey = per.key; rec.hash = hash;
+    notify('Report submitted', op.id, per.type + ' submitted by ' + op.name, rec.id + ' for ' + per.label + ' is ready for review in the Reports register.', ['Email'], ['zema']);
+    save(); ui.tab = 'docs'; render(); flash('Report ' + rec.id + ' submitted to ZEMA and frozen. Fingerprint ' + hash.slice(0, 12) + '...');
+  });
+}
+
+/* ---------- public status page ---------- */
+function publicStatus(op) {
+  var st = opStats(op.id), lic = licStatus(op);
+  if (st.breach || lic.days < 0) { return { c: 'bad', t: 'Action needed' }; }
+  if (st.warn || st.overdue) { return { c: 'warn', t: 'Under watch' }; }
+  return { c: 'ok', t: 'Compliant' };
+}
+function publicPage() {
+  var h = '<div class="card"><h2 class="page">Public compliance status</h2><p class="lead">Status of each licensed mine in the system, updated with every reading. Raw readings are not published. Demonstration data.</p><table><tr><th>Mine</th><th>Status</th><th>Licence</th><th>Open limit breaches</th><th>Concerns received and answered</th><th>Last update</th></tr>';
+  OPERATORS.forEach(function (op) {
+    var ps = publicStatus(op), lic = licStatus(op), cs = S.complaints.filter(function (c) { return c.op === op.id; });
+    h += '<tr><td>' + esc(op.name) + '<div class="small muted">' + esc(op.town) + ', ' + esc(op.river) + '</div></td><td>' + pill(ps.t, ps.c) + '</td><td>' + (lic.days < 0 ? pill('Expired', 'bad') : pill('Valid', 'ok')) + '</td><td>' + opStats(op.id).breach + '</td><td>' + cs.length + ' received, ' + cs.filter(function (c) { return c.status !== 'Received'; }).length + ' answered</td><td class="small">' + fclock(now()) + '</td></tr>';
+  });
+  var unlinked = S.complaints.filter(function (c) { return !c.op; });
+  h += '</table><p class="small muted mt">Green, compliant: no open breaches. Amber, under watch: early warnings or overdue actions. Red, action needed: an open limit breach or an expired licence. ' + (unlinked.length ? unlinked.length + ' concern(s) not linked to a mine are being handled by ZEMA. ' : '') + '</p>';
+  return h + '<div class="bar"><button class="btn" data-auth="concern">Report a pollution concern</button><button class="btn alt" data-auth="signin">Back to sign in</button></div></div>';
+}
+
+/* ---------- field mode ---------- */
+function haversine(a, b, c, d) { var r = Math.PI / 180, x = Math.sin((c - a) * r / 2), y = Math.sin((d - b) * r / 2); return 2 * 6371000 * Math.asin(Math.sqrt(x * x + Math.cos(a * r) * Math.cos(c * r) * y * y)); }
+function fieldOnline() { return navigator.onLine !== false && !ui.fieldOffline; }
+R.field = function () {
+  var opId = ui.role === 'operator' ? ui.op : (ui.focus || ui.fieldOp || OPERATORS[0].id), q = (S.fieldQueue || []);
+  var h = '<div class="field-mode"><h2 class="page">Field mode</h2><p class="lead">For phones at the monitoring point. The position is recorded with each entry and checked against the point. Entries made without signal wait in a queue and send when you are back online.</p>';
+  h += '<div class="bar no-print"><label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="field-offline"' + (ui.fieldOffline ? ' checked' : '') + '> Work offline (demonstration)</label>' + (q.length ? '<button class="btn" id="field-flush">Send ' + q.length + ' queued entr' + (q.length === 1 ? 'y' : 'ies') + '</button>' : '') + '<span class="small">' + (fieldOnline() ? pill('Online', 'ok') : pill('Offline: entries are queued', 'warn')) + '</span></div>';
+  h += '<form id="mf" data-kind="field" class="card">' + (ui.role === 'inspector' ? row('Mine', opSelect('op', opId)) : '') + row('Monitoring point', '<select name="point" id="field-point">' + POINTS.map(function (pt) { return '<option value="' + pt.id + '"' + (pt.id === (ui.fieldPt || 'out') ? ' selected' : '') + '>' + esc(pt.code + ' ' + pt.name) + '</option>'; }).join('') + '</select>');
+  h += '<div class="field-gps">' + row('Position', '<div id="gps-out" class="small">' + (ui.gps ? esc(ui.gps.lat.toFixed(5) + ', ' + ui.gps.lon.toFixed(5) + ' (within ' + Math.round(ui.gps.acc) + ' m)') : 'Not captured yet') + '</div><button type="button" class="btn alt" id="gps-btn">Capture my position</button>') + '</div>';
+  h += row('Instrument or meter ID', '<input type="text" name="instrument" required>') + row('Field sheet number', '<input type="text" name="sampleId" required>');
+  S.params.filter(function (p) { return p.kind === 'live'; }).forEach(function (p) { h += row(p.label + (p.unit ? ' (' + p.unit + ')' : ''), '<input type="number" step="any" inputmode="decimal" name="v_' + p.id + '">'); });
+  h += row('Photo (optional)', '<input type="file" name="photos" accept="image/*" capture="environment">') + row('Notes', '<textarea name="notes" rows="2"></textarea>') + '<div class="err" id="ferr"></div><button type="submit" class="btn field-submit">' + (fieldOnline() ? 'Submit field result' : 'Save to queue') + '</button></form>';
+  if (q.length) { h += '<div class="card mt"><h3>Queued entries</h3><ul class="small">' + q.map(function (e) { return '<li>' + esc(e.sampleId + ', ' + ptName(e.point) + ', saved ' + ftime(e.savedAt)) + '</li>'; }).join('') + '</ul></div>'; }
+  return h + '</div>';
+};
+function captureGps() {
+  var out = $('gps-out'); if (out) { out.textContent = 'Finding your position...'; }
+  if (!navigator.geolocation) { if (out) { out.textContent = 'This device cannot share its position.'; } return; }
+  navigator.geolocation.getCurrentPosition(function (p) { ui.gps = { lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy, t: now() }; if (out) { out.textContent = ui.gps.lat.toFixed(5) + ', ' + ui.gps.lon.toFixed(5) + ' (within ' + Math.round(ui.gps.acc) + ' m)'; } },
+    function (e) { if (out) { out.textContent = 'Position not available (' + (e.code === 1 ? 'permission refused' : 'no fix') + '). The entry is saved without it and flagged.'; } }, { enableHighAccuracy: true, timeout: 10000 });
+}
+function gpsCheck(opId, ptId, g) {
+  if (!g) { return { text: 'No position captured', flag: true }; }
+  var op = opById(opId), pt = ptById(ptId), d = haversine(g.lat, g.lon, op.lat + (pt.dLat || 0), op.lon + (pt.dLon || 0));
+  return { lat: g.lat, lon: g.lon, acc: g.acc, dist: Math.round(d), flag: d > 200, text: Math.round(d) + ' m from the point' + (d > 200 ? ', more than 200 m away' : '') };
+}
+function submitField(f, v, u, err) {
+  var opId = ui.role === 'inspector' ? v('op') : ui.op, vals = {}, n = 0;
+  S.params.filter(function (p) { return p.kind === 'live'; }).forEach(function (p) { var x = v('v_' + p.id); if (x !== '') { vals[p.id] = parseFloat(x); n += 1; } });
+  if (!n) { return err('Enter at least one reading.'); }
+  readPhotos(f.elements.photos && f.elements.photos.files).then(function (ph) {
+    var e = { op: opId, point: v('point'), instrument: v('instrument'), sampleId: v('sampleId'), notes: v('notes'), values: vals, photos: ph, gps: gpsCheck(opId, v('point'), ui.gps), byRole: ui.role, savedAt: now() };
+    if (!fieldOnline()) { S.fieldQueue = (S.fieldQueue || []).concat([e]); save(); closeModal(); render(); flash('No signal: entry saved to the queue. It sends when you are back online.'); return; }
+    var rec = sendFieldEntry(e, u); save(); ui.gps = null; render();
+    flash('Field result ' + rec.id + ' saved, ' + e.gps.text + (rec.breaches.length ? '. ' + rec.breaches.length + ' breach(es): an action was created.' : '.'));
+  }).catch(function (x) { err(x.message); });
+}
+function sendFieldEntry(e, u, fromQueue) {
+  var rec = api.addResult({ mode: 'Field', byRole: e.byRole, op: e.op, point: e.point, instrument: e.instrument, sampleId: e.sampleId, sampled: e.savedAt, method: 'Field mode, handheld meter', notes: e.notes, values: e.values }, u, now());
+  rec.gps = e.gps; rec.photos = e.photos; rec.queued = !!fromQueue; rec.sampled = e.savedAt;
+  return rec;
+}
+function flushFieldQueue() {
+  var q = S.fieldQueue || [], u = user(); if (!q.length || !fieldOnline()) { return 0; }
+  q.forEach(function (e) { sendFieldEntry(e, u, true); }); S.fieldQueue = []; save(); return q.length;
+}
+
 /* ---------------- start ---------------- */
 function start(fresh) {
   var isNew = fresh ? (S = buildSeed(now()), true) : load();
@@ -1508,6 +2032,7 @@ function start(fresh) {
 function finishStart() {
   loadSession();
   rebuildOpenLive();
+  syncSites();
   initSeries();
   var t0 = now();
   warmup = true;
@@ -1515,10 +2040,12 @@ function finishStart() {
   warmup = false;
   OPERATORS.forEach(function (o) { windows[o.id] = []; });
   Object.keys(series).forEach(function (k) { var s = series[k]; s.n = 0; s.sum = 0; s.min = Infinity; s.max = -Infinity; s.exceed = 0; s.warn = 0; });
+  overdueDigest(false);
   save();
   started = true;
   render();
 }
+window.addEventListener('online', function () { if (started && currentAccount() && flushFieldQueue()) { render(); flash('Back online: queued field entries sent.'); } });
 var started = false;
 $('focus').innerHTML = '<option value="">All mines</option>' + OPERATORS.map(function (o) { return '<option value="' + o.id + '">' + esc(o.name + ', ' + o.town) + '</option>'; }).join('');
 start(false);
@@ -1530,8 +2057,9 @@ setInterval(function () {
   dirty = false; tick(now());
   if (dirty) { save(); }
   if (document.querySelector('.modal-bg.open')) { $('clock').textContent = fclock(now()); return; }
-  var live = { dashboard: 1, overview: 1, ai: 1 };
-  if (live[ui.tab] || (dirty && (ui.tab === 'actions'))) { render(); } else { $('clock').textContent = fclock(now()); renderNav(); }
+  var live = { dashboard: 1, overview: 1, ai: 1, twin: 1, sensors: 1 };
+  if (ui.tab === 'twin' && $('twin-live')) { $('twin-live').innerHTML = twinLive(); $('clock').textContent = fclock(now()); renderNav(); }
+  else if (live[ui.tab] || (dirty && (ui.tab === 'actions'))) { render(); } else { $('clock').textContent = fclock(now()); renderNav(); }
 }, CONFIG.tickMs);
 window.addEventListener('resize', function () { if (ui.tab === 'dashboard') { drawChart(); } });
 })();
